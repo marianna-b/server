@@ -1,14 +1,14 @@
-#include "tcp/socket.h"
-#include "tcp/server.h"
 #include <thread>
 #include <iostream>
+#include <tcp/tcp_socket.h>
+#include <tcp/tcp_server.h>
 
 using namespace std;
 using namespace tcp;
 
 int main()
 {
-    server s;
+    tcp_server s;
     string ip = "127.0.0.1";
     int port = 32322;
 
@@ -18,7 +18,7 @@ int main()
     s.bind(ip.c_str(), port);
 
     std::thread t([&]() {
-        client c;
+        tcp_socket c;
         c.set_connection(ip.c_str(), port);
         c.write(msg.c_str(), msg.length() + 1);
 
@@ -27,7 +27,7 @@ int main()
         cerr << buf2;
     });
 
-    client* c2 = s.get_connection();
+    tcp_socket * c2 = s.get_connection();
     char buf[256];
     c2 -> read(buf, msg.length() + 1);
     cerr << buf;

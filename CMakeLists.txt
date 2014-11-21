@@ -1,18 +1,16 @@
 cmake_minimum_required(VERSION 2.8.4)
-project(server)
+project(tcp_server)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
 include_directories(src)
 set(SOURCE_FILES
-                    src/tcp/socket.h
-                    src/tcp/socket.cpp
-                    src/tcp/server.h
-                    src/tcp/server.cpp
-                    src/tcp/client.h
-                    src/tcp/client.cpp
-                    src/tcp/epoll.h
-                    src/tcp/epoll.cpp
+                    src/tcp/tcp_socket.h
+                    src/tcp/tcp_socket.cpp
+                    src/tcp/tcp_server.h
+                    src/tcp/tcp_server.cpp
+                    src/async_service/epoll.h
+                    src/async_service/epoll.cpp
                     src/main.cpp)
 
-add_executable(server ${SOURCE_FILES})
+add_executable(tcp_server ${SOURCE_FILES})

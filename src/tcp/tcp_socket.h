@@ -9,20 +9,16 @@
 #include <unistd.h>
 
 namespace tcp {
-    struct socket {
-        socket();
-        socket(const socket&) = delete;
-        socket(socket&&) = default;
-
+    struct tcp_socket {
+        tcp_socket();
+        tcp_socket(int);
+        tcp_socket(const tcp_socket &) = delete;
+        tcp_socket(tcp_socket &&) = default;
+        void set_connection(char const* ip, int port);
         size_t read(char*, size_t);
-
         size_t write(const char*, size_t);
-
-        ~socket();
-
+        ~tcp_socket();
     protected:
-        socket(int fd) : fd(fd) {}
-
         int fd;
     };
 }
