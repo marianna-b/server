@@ -8,7 +8,8 @@ namespace tcp {
     enum epoll_type {
         EPOLL_READ = EPOLLIN,
         EPOLL_WRITE = EPOLLOUT,
-        EPOLL_ACCEPT = EPOLLOUT | EPOLLONESHOT
+        EPOLL_ACCEPT = EPOLLOUT | EPOLLONESHOT,
+        EPOLL_CONNECT = EPOLLIN | EPOLLONESHOT
     };
 
     struct epoll {

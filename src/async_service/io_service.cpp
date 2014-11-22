@@ -1,7 +1,7 @@
 #include "io_service.h"
 #include <sys/eventfd.h>
-#include <string.h>
 #include <iostream>
+#include <string.h>
 
 using namespace tcp;
 using namespace std;
@@ -68,8 +68,27 @@ void tcp::io_service::run() {
                         throw std::runtime_error(strerror(errno));
                     }
                 } else {
-                    efd.remove(curr);
                     accept_callback[curr](flag);
+                }
+            }
+
+            if (efd.events[i].events == EPOLL_CONNECT) {
+
+                sockaddr_in addr;
+                const char* ip = connect_buf[curr].ip;
+                int port = connect_buf[curr].port;
+
+                addr.sin_family = AF_INET;
+                addr.sin_addr.s_addr = ::inet_addr(ip);
+                addr.sin_port = ::htons((uint16_t) port);
+
+                int flag = ::connect(curr, (struct sockaddr *)&addr, sizeof(addr));
+                if (flag < 0) {
+                    if (errno != EALREADY && errno != EINPROGRESS) {
+                        throw std::runtime_error(strerror(errno));
+                    }
+                } else {
+                    connect_callback[curr]();
                 }
             }
         }
@@ -86,13 +105,13 @@ tcp::io_service::~io_service() {
 
 void io_service::read_waiter(int fd, char* buf, size_t size, function<void(const char*)> f) {
     efd.add(fd, EPOLL_WRITE);
-    read_buf[fd] = io_read_buffer(buf, size);
+    read_buf[fd] = read_buffer(buf, size);
     read_callback[fd] = f;
 }
 
 void io_service::write_waiter(int fd, char const* mesg, size_t size, function<void()> f) {
     efd.add(fd, EPOLL_READ);
-    write_buf[fd] = io_write_buffer(mesg, size);
+    write_buf[fd] = write_buffer(mesg, size);
     write_callback[fd] = f;
 }
 
@@ -102,14 +121,25 @@ void io_service::accept_waiter(int fd, function<void(int)> f) {
     accept_callback[fd] = f;
 }
 
-io_read_buffer::io_read_buffer(char *b, size_t n) {
+read_buffer::read_buffer(char *b, size_t n) {
     buf = b;
     needed = n;
     done = 0;
 }
 
-io_write_buffer::io_write_buffer(char const *b, size_t n) {
+write_buffer::write_buffer(char const *b, size_t n) {
     buf = b;
     needed = n;
     done = 0;
+}
+
+void io_service::connect_waiter(int fd, const char* ip, int port, function<void()> f) {
+    efd.add(fd, EPOLL_CONNECT);
+    connect_callback[fd] = f;
+    connect_buf[fd] = connect_buffer(ip, port);
+}
+
+connect_buffer::connect_buffer(char const *i, int p) {
+   ip = i;
+   port = p;
 }

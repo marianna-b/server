@@ -25,7 +25,7 @@ tcp::tcp_socket *tcp::tcp_server::get_connection() {
     return new tcp_socket(cfd);
 }
 
-tcp_server::tcp_server() : fd(::socket(AF_INET, SOCK_STREAM, 0)) {
+tcp_server::tcp_server() : fd(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) {
     if (fd == -1) {
         throw runtime_error(strerror(errno));
     }

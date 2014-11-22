@@ -8,11 +8,8 @@ using namespace tcp;
 
 int main()
 {
-    tcp::io_service s;
     std::thread t([&]() {
-        s.run();
+
     });
-    s.stop();
-    t.join();
     return 0;
 }

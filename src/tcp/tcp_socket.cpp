@@ -7,7 +7,7 @@ using namespace tcp;
 using namespace std;
 
 tcp_socket::tcp_socket()
-    : fd(::socket(AF_INET, SOCK_STREAM, 0)) {
+    : fd(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) {
 
     if (fd == -1) {
         throw runtime_error(strerror(errno));
