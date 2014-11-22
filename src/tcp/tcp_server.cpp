@@ -19,9 +19,6 @@ void tcp_server::bind(char const *ip, int port) {
 }
 
 tcp::tcp_socket *tcp::tcp_server::get_connection() {
-    if(listen(fd, 20) < 0) {
-        throw std::runtime_error(strerror(errno));
-    }
     sockaddr_in my_addr;
     socklen_t addr_size = sizeof(sockaddr_in);
     int cfd = ::accept(fd, (struct sockaddr *) &my_addr, &addr_size);
@@ -36,4 +33,13 @@ tcp_server::tcp_server() : fd(::socket(AF_INET, SOCK_STREAM, 0)) {
 
 tcp_server::~tcp_server() {
     close(fd);
+}
+
+void tcp_server::listen() {
+    if(::listen(fd, 20) < 0) {
+        throw std::runtime_error(strerror(errno));
+    }}
+
+int tcp_server::get_fd() {
+    return fd;
 }

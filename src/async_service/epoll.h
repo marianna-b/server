@@ -4,6 +4,13 @@
 #define EPOLL
 
 namespace tcp {
+
+    enum epoll_type {
+        EPOLL_READ = EPOLLIN,
+        EPOLL_WRITE = EPOLLOUT,
+        EPOLL_ACCEPT = EPOLLOUT | EPOLLONESHOT
+    };
+
     struct epoll {
         epoll();
         epoll(const epoll&) = delete;
@@ -22,11 +29,6 @@ namespace tcp {
         const int max_events = 100;
     };
 
-    enum epoll_type {
-        EPOLL_READ,
-        EPOLL_WRITE,
-        EPOLL_ONESHOT
-    };
 }
 
 #endif // EPOLL

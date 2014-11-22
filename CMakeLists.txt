@@ -11,6 +11,8 @@ set(SOURCE_FILES
                     src/tcp/tcp_server.cpp
                     src/async_service/epoll.h
                     src/async_service/epoll.cpp
+                    src/async_service/io_service.h
+                    src/async_service/io_service.cpp
                     src/main.cpp)
 
 add_executable(tcp_server ${SOURCE_FILES})

@@ -10,6 +10,8 @@ namespace tcp {
         tcp_server(const tcp_server &) = delete;
         tcp_server(tcp_server &&) = default;
         void bind(char const*, int);
+        void listen();
+        int get_fd();
         tcp_socket * get_connection();
         ~tcp_server();
 

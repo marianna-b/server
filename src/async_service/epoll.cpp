@@ -12,12 +12,7 @@ epoll::epoll() {
 void epoll::add(int f, epoll_type type) {
     epoll_event ev;
     ev.data.fd = f;
-    if (type == EPOLL_READ)
-        ev.events = EPOLLIN;
-    if (type == EPOLL_WRITE)
-        ev.events = EPOLLOUT;
-    if (type == EPOLL_ONESHOT)
-        ev.events = EPOLLONESHOT;
+    ev.events = type;
     if (::epoll_ctl(fd, EPOLL_CTL_ADD, f, &ev) < 0)
         throw std::runtime_error(strerror(errno));
 }
