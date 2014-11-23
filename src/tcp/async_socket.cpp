@@ -17,23 +17,25 @@ async_socket::async_socket(int cfd) {
     fd = cfd;
 }
 
-void async_socket::set_connection(io_service *service, char const *ip, int port, function<void()> f) {
+void async_socket::set_connection(io_service *service, char const *ip, int port, function<void(int)> f) {
     service->connect_waiter(fd, ip, port, f);
 }
 
-void async_socket::read(io_service *service, size_t t, function<void(const char*)> f) {
+void async_socket::read(io_service *service, size_t t, function<void(int, string)> f) {
     service->read_waiter(fd, t, f);
 }
 
-void async_socket::write(io_service *service, char const *msg, size_t t, function<void()> f) {
+void async_socket::write(io_service *service, char const *msg, size_t t, function<void(int)> f) {
+
     service->write_waiter(fd, msg, t, f);
 }
 
-async_socket::~async_socket() {
-    //close(fd);
-}
+async_socket::~async_socket() {}
 
 int async_socket::get_fd() {
     return fd;
 }
 
+void async_socket::close() {
+    ::close(fd);
+}

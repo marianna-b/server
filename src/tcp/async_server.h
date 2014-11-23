@@ -16,6 +16,7 @@ namespace tcp {
         int get_fd();
         void get_connection(io_service*, std::function<void(int)>);
         ~async_server();
+        void close();
 
     private:
         int fd;

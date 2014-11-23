@@ -25,14 +25,15 @@ void tcp::io_service::run() {
             int curr = efd.events[i].data.fd;
 
             if (curr == stopper) {
-                cerr << i << "\nDon't stop me now!\n";
+                cerr << "Trying to stop service!\n";
+                cerr << "Success!\n";
                 running = false;
                 break;
             }
 
             epoll_type type = fd_type[curr];
             if (type == EPOLL_WRITE) {
-                cerr << "Trying to write, bitch!\n";
+                cerr << "Trying to write! " << curr <<"\n";
 
                 const char* buffer = write_buf[curr].buf;
                 size_t idx = write_buf[curr].done;
@@ -42,57 +43,66 @@ void tcp::io_service::run() {
                     if (errno != EAGAIN && errno != EWOULDBLOCK) {
                         throw std::runtime_error(strerror(errno));
                     }
+                    cerr << "We need some time!\n";
                 } else {
-                    cerr << "write " << w << endl;
+                    cerr << "Success!\n";
+                    cerr << "We've written " << w << "!\n";
                     write_buf[curr].done += w;
                     if (write_buf[curr].done == write_buf[curr].needed) {
-
+                        cerr << "Call of callback!\n";
                         efd.remove(curr);
-                        write_callback[curr]();
+                        write_callback[curr](curr);
                     }
                 }
             }
 
             if (type == EPOLL_READ) {
-                cerr << "Trying to read, bitch!\n";
+                cerr << "Trying to read! " << curr <<"\n";
                 char buffer[256];
                 size_t idx = read_buf[curr].done;
                 size_t idx2 = read_buf[curr].needed;
                 ssize_t r = ::recv(curr, buffer, idx2 - idx, MSG_DONTWAIT);
-                ::strcpy(read_buf[curr].buf, buffer);
-                cerr << curr << " " << "We've read " << r << "\n";
+                read_buf[curr].buf += string(buffer);
+
                 if (r < 0) {
                     if (errno != EAGAIN && errno != EWOULDBLOCK) {
                         throw std::runtime_error(strerror(errno));
                     }
-                    cerr << "Some time needed!\n";
+                    cerr << "We need some time!\n";
                 } else {
+                    cerr << "Success!\n";
+                    cerr << "We've read " << r << "!\n";
                     read_buf[curr].done += r;
+
                     if (read_buf[curr].done == read_buf[curr].needed) {
+                        cerr << "Call of callback!\n";
                         efd.remove(curr);
-                        cerr << "Are we going to finish?\n";
-                        read_callback[curr](read_buf[curr].buf);
+                        read_callback[curr](curr, read_buf[curr].buf);
                     }
                 }
             }
 
             if (type == EPOLL_ACCEPT) {
-                cerr << "Trying to accept, bitch!\n";
+                cerr << "Trying to accept! " << curr <<"\n";
                 sockaddr_in addr;
                 socklen_t addr_size;
                 int flag = ::accept4(curr, (sockaddr *) &addr, &addr_size, SOCK_NONBLOCK);
+
                 if (flag < 0) {
                     if (errno != EAGAIN && errno != EWOULDBLOCK) {
                         throw std::runtime_error(strerror(errno));
                     }
+                    cerr << "We need some time!\n";
                 } else {
+                    cerr << "Success! Client " << flag << "\n";
+                    cerr << "Call of callback!\n";
                     efd.remove(curr);
                     accept_callback[curr](flag);
                 }
             }
 
             if (type == EPOLL_CONNECT) {
-                cerr << "Trying to connect, bitch!\n";
+                cerr << "Trying to connect! " << curr <<"\n";
                 sockaddr_in addr;
                 const char* ip = connect_buf[curr].ip;
                 int port = connect_buf[curr].port;
@@ -108,9 +118,10 @@ void tcp::io_service::run() {
                     }
                     cerr << "We need some time!\n";
                 } else {
+                    cerr << "Success!\n";
                     cerr << "Call of callback!\n";
                     efd.remove(curr);
-                    connect_callback[curr]();
+                    connect_callback[curr](curr);
                 }
             }
         }
@@ -118,7 +129,7 @@ void tcp::io_service::run() {
 }
 
 void tcp::io_service::stop() {
-    cerr << "Stopping service!\n";
+    cerr << "SERVICE STOPPING!\n";
     efd.add(stopper, EPOLL_READ);
     ::write(stopper, "close", 6);
 }
@@ -127,15 +138,14 @@ tcp::io_service::~io_service() {
     ::close(stopper);
 }
 
-void io_service::read_waiter(int fd, size_t size, function<void(const char*)> f) {
-    cerr << "READING " << fd << fd_type.size()<< endl;
+void io_service::read_waiter(int fd, size_t size, function<void(int, string)> f) {
     efd.add(fd, EPOLL_READ);
     fd_type[fd] = EPOLL_READ;
     read_buf[fd] = read_buffer(size);
     read_callback[fd] = f;
 }
 
-void io_service::write_waiter(int fd, char const* mesg, size_t size, function<void()> f) {
+void io_service::write_waiter(int fd, char const* mesg, size_t size, function<void(int)> f) {
     efd.add(fd, EPOLL_WRITE);
     fd_type[fd] = EPOLL_WRITE;
     write_buf[fd] = write_buffer(mesg, size);
@@ -150,7 +160,7 @@ void io_service::accept_waiter(int fd, function<void(int)> f) {
 }
 
 read_buffer::read_buffer(size_t n) {
-    buf = new char[256];
+    buf = "";
     needed = n;
     done = 0;
 }
@@ -161,7 +171,7 @@ write_buffer::write_buffer(char const *b, size_t n) {
     done = 0;
 }
 
-void io_service::connect_waiter(int fd, const char* ip, int port, function<void()> f) {
+void io_service::connect_waiter(int fd, const char* ip, int port, function<void(int)> f) {
     efd.add(fd, EPOLL_WRITE);
     fd_type[fd] = EPOLL_CONNECT;
     connect_callback[fd] = f;
@@ -173,6 +183,3 @@ connect_buffer::connect_buffer(char const *i, int p) {
    port = p;
 }
 
-read_buffer::~read_buffer() {
-    delete buf;
-}

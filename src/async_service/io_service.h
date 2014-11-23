@@ -8,13 +8,12 @@
 namespace tcp {
 
     struct read_buffer {
-        char* buf;
+        std::string buf;
         size_t needed;
         size_t done;
 
         read_buffer() = default; // TODO throw logic error
         read_buffer(size_t);
-        ~read_buffer();
     };
 
     struct write_buffer {
@@ -43,10 +42,10 @@ namespace tcp {
         void run();
         void stop();
 
-        void read_waiter(int, size_t, std::function <void(const char*)>);
-        void write_waiter(int, const char*, size_t, std::function <void()>);
+        void read_waiter(int, size_t, std::function <void(int, std::string)>);
+        void write_waiter(int, const char*, size_t, std::function <void(int)>);
         void accept_waiter(int, std::function <void(int)>);
-        void connect_waiter(int, const char*, int, std::function <void()>);
+        void connect_waiter(int, const char*, int, std::function <void(int)>);
 
         ~io_service();
     private:
@@ -56,14 +55,14 @@ namespace tcp {
 
         std::map <int, std::function<void(int)> > accept_callback;
 
-        std::map <int, std::function<void()> > connect_callback;
+        std::map <int, std::function<void(int)> > connect_callback;
         std::map <int, connect_buffer> connect_buf;
 
         std::map <int, read_buffer> read_buf;
-        std::map <int, std::function<void(const char*)> > read_callback;
+        std::map <int, std::function<void(int, std::string)> > read_callback;
 
         std::map <int, write_buffer> write_buf;
-        std::map <int, std::function<void()> > write_callback;
+        std::map <int, std::function<void(int)> > write_callback;
     };
 }
 

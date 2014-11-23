@@ -41,3 +41,7 @@ void async_server::get_connection(io_service* service, function<void(int)> callb
 async_server::~async_server() {
     //close(fd);
 }
+
+void async_server::close() {
+    ::close(fd);
+}

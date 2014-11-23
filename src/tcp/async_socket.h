@@ -15,12 +15,13 @@ namespace tcp {
         async_socket(int);
         async_socket(const async_socket &) = delete;
         async_socket(async_socket &&) = default;
-        void set_connection(io_service*, char const* ip, int port, std::function<void()>);
-        void read(io_service*, size_t, std::function<void(const char*)>);
-        void write(io_service*, const char*, size_t, std::function<void()>);
+        void set_connection(io_service*, char const* ip, int port, std::function<void(int)>);
+        void read(io_service*, size_t, std::function<void(int, std::string)>);
+        void write(io_service*, const char*, size_t, std::function<void(int)>);
         ~async_socket();
 
         int get_fd();
+        void close();
 
     protected:
         int fd;
