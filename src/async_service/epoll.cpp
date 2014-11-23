@@ -2,6 +2,9 @@
 #include <unistd.h>
 #include <stdexcept>
 #include <string.h>
+#include <iostream>
+
+using namespace std;
 
 using namespace tcp;
 

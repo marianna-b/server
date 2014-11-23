@@ -1,5 +1,4 @@
 #include <functional>
-#include <tcp/tcp_socket.h>
 #include <map>
 #include "epoll.h"
 
@@ -14,7 +13,8 @@ namespace tcp {
         size_t done;
 
         read_buffer() = default; // TODO throw logic error
-        read_buffer(char*, size_t);
+        read_buffer(size_t);
+        ~read_buffer();
     };
 
     struct write_buffer {
@@ -43,7 +43,7 @@ namespace tcp {
         void run();
         void stop();
 
-        void read_waiter(int, char*, size_t, std::function <void(const char*)>);
+        void read_waiter(int, size_t, std::function <void(const char*)>);
         void write_waiter(int, const char*, size_t, std::function <void()>);
         void accept_waiter(int, std::function <void(int)>);
         void connect_waiter(int, const char*, int, std::function <void()>);
@@ -52,6 +52,7 @@ namespace tcp {
     private:
         epoll efd;
         int stopper;
+        std::map <int, epoll_type> fd_type;
 
         std::map <int, std::function<void(int)> > accept_callback;
 
