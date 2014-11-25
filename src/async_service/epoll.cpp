@@ -20,14 +20,28 @@ void epoll::add(int f, epoll_type type) {
         throw std::runtime_error(strerror(errno));
 }
 
+
+void epoll::modify(int f, epoll_type type) {
+    epoll_event ev;
+    ev.data.fd = f;
+    ev.events = type;
+    if (::epoll_ctl(fd, EPOLL_CTL_MOD, f, &ev) < 0)
+        throw std::runtime_error(strerror(errno));
+}
+
 void epoll::remove(int f) {
     if (::epoll_ctl(fd, EPOLL_CTL_DEL, f, NULL) < 0)
         throw std::runtime_error(strerror(errno));}
 
 int epoll::wait() {
-    return ::epoll_wait(fd, events, max_events, timeout);
+    return ::epoll_wait(fd, events, MAX_EVENTS, timeout);
 }
 
 epoll::~epoll() {
+}
+
+void epoll::close() {
     ::close(fd);
 }
+
+

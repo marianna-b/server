@@ -9,7 +9,7 @@ namespace tcp {
 
     struct async_server {
         async_server();
-        async_server(const async_server &) = delete;
+        async_server(const async_server &) = default;
         async_server(async_server &&) = default;
         void bind(char const*, int);
         void listen();

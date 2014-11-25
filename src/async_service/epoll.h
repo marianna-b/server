@@ -8,18 +8,20 @@ namespace tcp {
     enum epoll_type {
         EPOLL_READ = EPOLLIN,
         EPOLL_WRITE = EPOLLOUT,
-        EPOLL_ACCEPT = EPOLLOUT | EPOLLONESHOT,
-        EPOLL_CONNECT = EPOLLIN | EPOLLONESHOT
+        EPOLL_BOTH = EPOLLOUT | EPOLLIN,
     };
 
     struct epoll {
         epoll();
-        epoll(const epoll&) = delete;
+        epoll(const epoll&) = default;
         epoll(epoll&&) = default;
+
+        epoll& operator=(const epoll&) = default;
 
         void add(int, epoll_type);
         void remove(int);
-
+        void modify(int, epoll_type);
+        void close();
         int wait();
         ~epoll();
 
@@ -27,7 +29,7 @@ namespace tcp {
     private:
         int fd;
         int timeout = 10;
-        const int max_events = 100;
+        static const int MAX_EVENTS = 100;
     };
 
 }

@@ -6,7 +6,7 @@ using namespace std;
 
 int main() {
     string ip = "127.0.0.2";
-    int port = 33345;
+    int port = 33344;
 
     async_socket client;
     io_service service;

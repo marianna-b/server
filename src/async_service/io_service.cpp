@@ -2,15 +2,15 @@
 #include <sys/eventfd.h>
 #include <iostream>
 #include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 
 using namespace tcp;
 using namespace std;
 
+void reader_del_epoll(epoll*, int, io_events*);
+void writer_del_epoll(epoll*, int, io_events*);
+
 tcp::io_service::io_service() :efd() {
+    clean = false;
     stopper = ::eventfd(10, EFD_NONBLOCK);
 }
 
@@ -31,101 +31,44 @@ void tcp::io_service::run() {
                 break;
             }
 
-            epoll_type type = fd_type[curr];
-            if (type == EPOLL_WRITE) {
-                cerr << "Trying to write! " << curr <<"\n";
+            io_events* ev = &data[curr];
 
-                const char* buffer = (char*)write_buf[curr].buf;
-                size_t idx = write_buf[curr].done;
-                size_t idx2 = write_buf[curr].needed;
-                ssize_t w = ::send(curr, buffer + idx, idx2 - idx, MSG_DONTWAIT);
-                if (w < 0) {
-                    if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                        throw std::runtime_error(strerror(errno));
-                    }
-                    cerr << "We need some time!\n";
-                } else {
-                    cerr << "Success!\n";
-                    cerr << "We've written " << w << "!\n";
-                    write_buf[curr].done += w;
-                    if (write_buf[curr].done == write_buf[curr].needed) {
-                        cerr << "Call of callback!\n";
-                        efd.remove(curr);
-                        write_callback[curr](curr);
-                    }
-                }
-            }
-
-            if (type == EPOLL_READ) {
-                cerr << "Trying to read! " << curr <<"\n";
-                char buffer[256];
-                size_t idx = read_buf[curr].done;
-                size_t idx2 = read_buf[curr].needed;
-                ssize_t r = ::recv(curr, buffer, idx2 - idx, MSG_DONTWAIT);
-
-                if (r < 0) {
-                    if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                        throw std::runtime_error(strerror(errno));
-                    }
-                    cerr << "We need some time!\n";
-                } else {
-                    read_buf[curr].buf = buffer;
-                    ::memcpy((char*)read_buf[curr].buf + idx, buffer, r);
-                    cerr << "Success!\n";
-                    cerr << "We've read " << r << "!\n";
-                    read_buf[curr].done += r;
-
-                    if (read_buf[curr].done == read_buf[curr].needed) {
-                        cerr << "Call of callback!\n";
-                        efd.remove(curr);
-                        read_callback[curr](curr, read_buf[curr].buf);
-                    }
-                }
-            }
-
-            if (type == EPOLL_ACCEPT) {
-                cerr << "Trying to accept! " << curr <<"\n";
-                sockaddr_in addr;
-                socklen_t addr_size;
-                int flag = ::accept4(curr, (sockaddr *) &addr, &addr_size, SOCK_NONBLOCK);
-
-                if (flag < 0) {
-                    if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                        throw std::runtime_error(strerror(errno));
-                    }
-                    cerr << "We need some time!\n";
-                } else {
-                    cerr << "Success! Client " << flag << "\n";
+            if (efd.events[i].events & EPOLL_WRITE) {
+                if (ev->want_connect() && ev->run_connect()) {
+                    cerr << "Trying to connect! " << curr << "\n";
                     cerr << "Call of callback!\n";
-                    efd.remove(curr);
-                    accept_callback[curr](flag);
+                    ev->connect_call_back();
+                    writer_del_epoll(&efd, curr, ev);
+                }
+
+                if (ev->want_write() && ev->run_write()) {
+                    cerr << "Trying to write! " << curr <<"\n";
+                    cerr << "Call of callback!\n";
+                    ev->write_call_back();
+                    writer_del_epoll(&efd, curr, ev);
                 }
             }
 
-            if (type == EPOLL_CONNECT) {
-                cerr << "Trying to connect! " << curr <<"\n";
-                sockaddr_in addr;
-                const char* ip = connect_buf[curr].ip;
-                int port = connect_buf[curr].port;
-
-                addr.sin_family = AF_INET;
-                addr.sin_addr.s_addr = ::inet_addr(ip);
-                addr.sin_port = ::htons((uint16_t) port);
-
-                int flag = ::connect(curr, (struct sockaddr *)&addr, sizeof(addr));
-                if (flag < 0) {
-                    if (errno != EALREADY && errno != EINPROGRESS) {
-                        throw std::runtime_error(strerror(errno));
-                    }
-                    cerr << "We need some time!\n";
-                } else {
-                    cerr << "Success!\n";
+            if (efd.events[i].events & EPOLL_READ) {
+                if (ev->want_accept() && ev->run_accept()) {
+                    cerr << "Trying to accept! " << curr <<"\n";
                     cerr << "Call of callback!\n";
-                    efd.remove(curr);
-                    connect_callback[curr](curr);
+                    ev->accept_call_back();
+                    reader_del_epoll(&efd, curr, ev);
+                }
+
+                if (ev->want_read() && ev->run_read()) {
+                    cerr << "Trying to read! " << curr << "\n";
+                    cerr << "Call of callback!\n";
+                    ev->read_call_back();
+                    reader_del_epoll(&efd, curr, ev);
                 }
             }
         }
+    }
+    if (clean) {
+        efd = epoll();
+        clean = false;
     }
 }
 
@@ -135,51 +78,104 @@ void tcp::io_service::stop() {
     ::write(stopper, "close", 6);
 }
 
+void io_service::clean_stop() {
+    cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
+    clean = true;
+    efd.add(stopper, EPOLL_READ);
+    ::write(stopper, "close", 6);
+}
+
 tcp::io_service::~io_service() {
     ::close(stopper);
+    efd.close();
+}
+
+void reader_del_epoll(epoll* efd, int fd, io_events* ev) {
+
+    size_t w = ev->get_writers();
+    size_t r = ev->get_readers();
+
+    if (r == 0)
+        if (w == 0) {
+            //cerr << "READER_DEL_EPOLL " << fd << endl;
+            efd->remove(fd);
+        } else {
+            //cerr << "READER_DEL_MODIFY_EPOLL " << fd << endl;
+            efd->modify(fd, EPOLL_WRITE);
+        }
+}
+
+void writer_del_epoll(epoll* efd, int fd, io_events* ev) {
+
+    size_t w = ev->get_writers();
+    size_t r = ev->get_readers();
+
+    if (w == 0)
+        if (r == 0) {
+            //cerr << "WRITER_DEL_EPOLL " << fd << endl;
+            efd->remove(fd);
+        } else {
+            //cerr << "WRITER_DEL_MODIFY_EPOLL " << fd << endl;
+            efd->modify(fd, EPOLL_READ);
+        }
+}
+
+void reader_add_epoll(epoll* efd, int fd, io_events* ev) {
+
+    size_t w = ev->get_writers();
+    size_t r = ev->get_readers();
+    if (r == 0)
+        if (w == 0) {
+            //cerr << "READER_ADD_EPOLL " << fd << endl;
+            efd->add(fd, EPOLL_READ);
+        } else {
+            //cerr << "READER_ADD_MODIFY_EPOLL " << fd << endl;
+            efd->modify(fd, EPOLL_BOTH);
+        }
+}
+
+void writer_add_epoll(epoll* efd, int fd, io_events* ev) {
+
+    size_t w = ev->get_writers();
+    size_t r = ev->get_readers();
+
+    if (w == 0)
+        if (r == 0) {
+            //cerr << "WRITER_ADD_EPOLL " << fd << endl;
+            efd->add(fd, EPOLL_WRITE);
+        } else {
+            //cerr << "WRITER_ADD_MODIFY_EPOLL " << fd << endl;
+            efd->modify(fd, EPOLL_BOTH);
+        }
 }
 
 void io_service::read_waiter(int fd, size_t size, function<void(int, void*)> f) {
-    efd.add(fd, EPOLL_READ);
-    fd_type[fd] = EPOLL_READ;
-    read_buf[fd] = read_buffer(size);
-    read_callback[fd] = f;
+    if (data.count(fd) == 0)
+        data[fd] = io_events(fd);
+    reader_add_epoll(&efd, fd, &data[fd]);
+    data[fd].add_read(read_buffer(size, f));
 }
 
 void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(int)> f) {
-    efd.add(fd, EPOLL_WRITE);
-    fd_type[fd] = EPOLL_WRITE;
-    write_buf[fd] = write_buffer(mesg, size);
-    write_callback[fd] = f;
+    if (data.count(fd) == 0)
+        data[fd] = io_events(fd);
+    writer_add_epoll(&efd, fd, &data[fd]);
+    data[fd].add_write(write_buffer(mesg, size, f));
 }
-
 
 void io_service::accept_waiter(int fd, function<void(int)> f) {
-    efd.add(fd, EPOLL_READ);
-    fd_type[fd] = EPOLL_ACCEPT;
-    accept_callback[fd] = f;
-}
+    if (data.count(fd) == 0)
+        data[fd] = io_events(fd);
 
-read_buffer::read_buffer(size_t n) {
-    needed = n;
-    done = 0;
-}
-
-write_buffer::write_buffer(void *b, size_t n) {
-    ::memcpy(buf, b, n);
-    needed = n;
-    done = 0;
+    reader_add_epoll(&efd, fd, &data[fd]);
+    data[fd].add_accept(accept_buffer(f));
 }
 
 void io_service::connect_waiter(int fd, const char* ip, int port, function<void(int)> f) {
-    efd.add(fd, EPOLL_WRITE);
-    fd_type[fd] = EPOLL_CONNECT;
-    connect_callback[fd] = f;
-    connect_buf[fd] = connect_buffer(ip, port);
-}
+    if (data.count(fd) == 0)
+        data[fd] = io_events(fd);
 
-connect_buffer::connect_buffer(char const *i, int p) {
-   ip = i;
-   port = p;
+    writer_add_epoll(&efd, fd, &data[fd]);
+    data[fd].add_connect(connect_buffer(ip, port, f));
 }
 

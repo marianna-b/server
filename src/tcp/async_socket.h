@@ -13,7 +13,7 @@ namespace tcp {
     struct async_socket {
         async_socket();
         async_socket(int);
-        async_socket(const async_socket &) = delete;
+        async_socket(const async_socket &) = default;
         async_socket(async_socket &&) = default;
         void set_connection(io_service*, char const* ip, int port, std::function<void(int)>);
         void read(io_service*, size_t, std::function<void(int, void*)>);
