@@ -21,12 +21,11 @@ void async_socket::set_connection(io_service *service, char const *ip, int port,
     service->connect_waiter(fd, ip, port, f);
 }
 
-void async_socket::read(io_service *service, size_t t, function<void(int, string)> f) {
+void async_socket::read(io_service *service, size_t t, function<void(int, void*)> f) {
     service->read_waiter(fd, t, f);
 }
 
-void async_socket::write(io_service *service, char const *msg, size_t t, function<void(int)> f) {
-
+void async_socket::write(io_service *service, void *msg, size_t t, function<void(int)> f) {
     service->write_waiter(fd, msg, t, f);
 }
 

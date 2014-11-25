@@ -13,6 +13,18 @@ set(SOURCE_FILES
                     src/async_service/epoll.cpp
                     src/async_service/io_service.h
                     src/async_service/io_service.cpp
-                    src/main.cpp)
+                    src/echo_client.cpp)
 
-add_executable(tcp_server ${SOURCE_FILES})
+set(SOURCES
+                    src/tcp/async_socket.h
+                    src/tcp/async_socket.cpp
+                    src/tcp/async_server.h
+                    src/tcp/async_server.cpp
+                    src/async_service/epoll.h
+                    src/async_service/epoll.cpp
+                    src/async_service/io_service.h
+                    src/async_service/io_service.cpp
+                    src/echo_server.cpp)
+
+add_executable(echo_client ${SOURCE_FILES})
+add_executable(echo_server ${SOURCES})

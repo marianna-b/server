@@ -8,7 +8,7 @@
 namespace tcp {
 
     struct read_buffer {
-        std::string buf;
+        void* buf;
         size_t needed;
         size_t done;
 
@@ -17,12 +17,12 @@ namespace tcp {
     };
 
     struct write_buffer {
-        const char* buf;
+        char buf[256];
         size_t needed;
         size_t done;
 
         write_buffer() = default; // TODO throw logic error
-        write_buffer(const char*, size_t);
+        write_buffer(void*, size_t);
     };
 
     struct connect_buffer {
@@ -42,8 +42,8 @@ namespace tcp {
         void run();
         void stop();
 
-        void read_waiter(int, size_t, std::function <void(int, std::string)>);
-        void write_waiter(int, const char*, size_t, std::function <void(int)>);
+        void read_waiter(int, size_t, std::function <void(int, void*)>);
+        void write_waiter(int, void*, size_t, std::function <void(int)>);
         void accept_waiter(int, std::function <void(int)>);
         void connect_waiter(int, const char*, int, std::function <void(int)>);
 
@@ -59,7 +59,7 @@ namespace tcp {
         std::map <int, connect_buffer> connect_buf;
 
         std::map <int, read_buffer> read_buf;
-        std::map <int, std::function<void(int, std::string)> > read_callback;
+        std::map <int, std::function<void(int, void *)> > read_callback;
 
         std::map <int, write_buffer> write_buf;
         std::map <int, std::function<void(int)> > write_callback;

@@ -35,7 +35,7 @@ void tcp::io_service::run() {
             if (type == EPOLL_WRITE) {
                 cerr << "Trying to write! " << curr <<"\n";
 
-                const char* buffer = write_buf[curr].buf;
+                const char* buffer = (char*)write_buf[curr].buf;
                 size_t idx = write_buf[curr].done;
                 size_t idx2 = write_buf[curr].needed;
                 ssize_t w = ::send(curr, buffer + idx, idx2 - idx, MSG_DONTWAIT);
@@ -62,7 +62,6 @@ void tcp::io_service::run() {
                 size_t idx = read_buf[curr].done;
                 size_t idx2 = read_buf[curr].needed;
                 ssize_t r = ::recv(curr, buffer, idx2 - idx, MSG_DONTWAIT);
-                read_buf[curr].buf += string(buffer);
 
                 if (r < 0) {
                     if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -70,6 +69,8 @@ void tcp::io_service::run() {
                     }
                     cerr << "We need some time!\n";
                 } else {
+                    read_buf[curr].buf = buffer;
+                    ::memcpy((char*)read_buf[curr].buf + idx, buffer, r);
                     cerr << "Success!\n";
                     cerr << "We've read " << r << "!\n";
                     read_buf[curr].done += r;
@@ -129,7 +130,7 @@ void tcp::io_service::run() {
 }
 
 void tcp::io_service::stop() {
-    cerr << "SERVICE STOPPING!\n";
+    cerr << "SERVICE STOP REQUEST SENT!\n";
     efd.add(stopper, EPOLL_READ);
     ::write(stopper, "close", 6);
 }
@@ -138,14 +139,14 @@ tcp::io_service::~io_service() {
     ::close(stopper);
 }
 
-void io_service::read_waiter(int fd, size_t size, function<void(int, string)> f) {
+void io_service::read_waiter(int fd, size_t size, function<void(int, void*)> f) {
     efd.add(fd, EPOLL_READ);
     fd_type[fd] = EPOLL_READ;
     read_buf[fd] = read_buffer(size);
     read_callback[fd] = f;
 }
 
-void io_service::write_waiter(int fd, char const* mesg, size_t size, function<void(int)> f) {
+void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(int)> f) {
     efd.add(fd, EPOLL_WRITE);
     fd_type[fd] = EPOLL_WRITE;
     write_buf[fd] = write_buffer(mesg, size);
@@ -160,13 +161,12 @@ void io_service::accept_waiter(int fd, function<void(int)> f) {
 }
 
 read_buffer::read_buffer(size_t n) {
-    buf = "";
     needed = n;
     done = 0;
 }
 
-write_buffer::write_buffer(char const *b, size_t n) {
-    buf = b;
+write_buffer::write_buffer(void *b, size_t n) {
+    ::memcpy(buf, b, n);
     needed = n;
     done = 0;
 }
