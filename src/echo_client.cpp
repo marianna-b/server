@@ -1,6 +1,5 @@
 #include <tcp/async_server.h>
 #include <iostream>
-#include <string.h>
 
 using namespace tcp;
 using namespace std;

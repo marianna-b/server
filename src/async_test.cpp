@@ -10,30 +10,31 @@ int main()
 {
     string ip = "127.0.0.1";
     int port = 33222;
-    string message1 = "This is message #1";
-    string message2 = "This is message #2 ";
+    char m1[256] = "This is message #1";
+    char m2[256] = "This is message #2 ";
 
     async_server s;
     io_service service;
     s.bind(ip.c_str(), port);
     s.listen();
 
-    size_t need1 = message1.length() + 1;
-    size_t need2 = message2.length() + 1;
+    size_t need1 = 19;
+    size_t need2 = 20;
+
     async_socket c;
     function<void(int)> cliFunc1 = [&](int fd) {
         cerr << "Connection established " << fd << "!\n";
 
-        function<void(int)> cliFunc2 = [&](int fd){
+        function<void(int)> cliFunc2 = [&](int fd1){
             cerr << "Message #1 written!\n";
 
-            function<void(int, string buf)> cliFunc3 = [&](int fd, string buf){
-                cerr << "Message #2 read:  " << buf << "\n";
+            function<void(int, void*)> cliFunc3 = [&](int fd2, void* buf){
+                cerr << "Message #2 read:  " << (char*)buf << "\n";
                 service.stop();
             };
             c.read(&service, need2, cliFunc3);
         };
-        c.write(&service, message1.c_str(), need1, cliFunc2);
+        c.write(&service, m1, need1, cliFunc2);
     };
     c.set_connection(&service, ip.c_str(), port, cliFunc1);
 
@@ -41,14 +42,14 @@ int main()
         async_socket client(fd);
         cerr << "Client accepted " << fd << "!\n";
 
-        auto servFunc2 = [&](int fd1, std::string buffer) {
+        function<void(int, void*)> servFunc2 = [&](int fd1, void* buf2) {
             async_socket client2(fd1);
-             cerr << "Message #1 read: " << buffer << "\n";
+             cerr << "Message #1 read: " << (char*)buf2 << "\n";
 
              auto servFunc3 = [&](int fd2){
                 cerr << "Message #2 written!\n";
              };
-             client2.write(&service, message2.c_str(), need2, servFunc3);
+             client2.write(&service, m2, need2, servFunc3);
         };
         client.read(&service, need1, servFunc2);
     };
