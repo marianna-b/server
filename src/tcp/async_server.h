@@ -14,7 +14,7 @@ namespace tcp {
         void bind(char const*, int);
         void listen();
         int get_fd();
-        void get_connection(io_service*, std::function<void(int)>);
+        void get_connection(io_service*, std::function<void(async_socket)>);
         ~async_server();
         void close();
 

@@ -26,10 +26,10 @@ namespace tcp {
         friend class async_server;
         friend class async_socket;
 
-        void read_waiter(int, size_t, std::function <void(int, void*)>);
-        void write_waiter(int, void*, size_t, std::function <void(int)>);
-        void accept_waiter(int, std::function <void(int)>);
-        void connect_waiter(int, const char*, int, std::function <void(int)>);
+        void read_waiter(int, size_t, std::function <void(async_socket, void*)>);
+        void write_waiter(int, void*, size_t, std::function <void(async_socket)>);
+        void accept_waiter(int, std::function <void(async_socket)>);
+        void connect_waiter(int, const char*, int, std::function <void(async_socket)>);
 
         bool clean;
         epoll efd;

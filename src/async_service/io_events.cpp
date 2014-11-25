@@ -2,30 +2,31 @@
 #include <tcp/async_socket.h>
 #include <string.h>
 #include <iostream>
+#include "io_events.h"
 
 using namespace tcp;
 using namespace std;
 
-tcp::read_buffer::read_buffer(size_t t, function<void(int , void * )> function) {
+tcp::read_buffer::read_buffer(size_t t, function<void(async_socket, void * )> function) {
     needed = t;
     done = 0;
     call = function;
 }
 
-write_buffer::write_buffer(void *pVoid, size_t t, function<void(int)> function) {
+write_buffer::write_buffer(void *pVoid, size_t t, function<void(async_socket)> function) {
     ::memcpy(buf, pVoid, t);
     needed = t;
     done = 0;
     call = function;
 }
 
-connect_buffer::connect_buffer(char const *string, int p, function<void(int)> function) {
+connect_buffer::connect_buffer(char const *string, int p, function<void(async_socket)> function) {
     ip = string;
     port = p;
     call = function;
 }
 
-accept_buffer::accept_buffer(function<void(int)> function) {
+accept_buffer::accept_buffer(function<void(async_socket)> function) {
     call = function;
 }
 
@@ -66,6 +67,7 @@ bool io_events::want_write() {
 }
 
 bool io_events::run_accept() {
+    cerr << "Trying to accept! " << fd <<"\n";
     accept_buffer now = accepters.front();
     accepters.pop_front();
     sockaddr_in addr;
@@ -88,6 +90,7 @@ bool io_events::run_accept() {
 }
 
 bool io_events::run_connect() {
+    cerr << "Trying to connect! " << fd << "\n";
     connect_buffer now = connectors.front();
     sockaddr_in addr;
     const char *ip = now.ip;
@@ -111,6 +114,7 @@ bool io_events::run_connect() {
 }
 
 bool io_events::run_read() {
+    cerr << "Trying to read! " << fd << "\n";
     read_buffer now = readers.front();
     readers.pop_front();
     char buffer[256];
@@ -125,7 +129,7 @@ bool io_events::run_read() {
         }
         cerr << "We need some time!\n";
     } else {
-        ::memcpy((char *) now.buf + idx, buffer, r);
+        ::memcpy(now.buf + idx, buffer, r);
         cerr << "Success!\n";
         cerr << "We've read " << r << "!\n";
         now.done += r;
@@ -139,12 +143,15 @@ bool io_events::run_read() {
 }
 
 bool io_events::run_write() {
+    cerr << "Trying to write! " << fd <<"\n";
     write_buffer now = writers.front();
     writers.pop_front();
+
     const char *buffer = now.buf;
     size_t idx = now.done;
     size_t idx2 = now.needed;
     ssize_t w = ::send(fd, buffer + idx, idx2 - idx, MSG_DONTWAIT);
+
     if (w < 0) {
         writers.push_front(now);
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -157,6 +164,7 @@ bool io_events::run_write() {
         cerr << "We've written " << w << "!\n";
         now.done += w;
         writers.push_front(now);
+
         if (now.done == now.needed)
             return true;
     }
@@ -165,25 +173,25 @@ bool io_events::run_write() {
 
 void io_events::write_call_back() {
     write_buffer now = writers.front();
-    now.call(fd);
+    now.call(async_socket(fd));
     writers.pop_front();
 }
 
 void io_events::connect_call_back() {
     connect_buffer now = connectors.front();
-    now.call(fd);
+    now.call(async_socket(fd));
     connectors.pop_front();
 }
 
 void io_events::accept_call_back() {
     accept_buffer now = accepters.front();
-    now.call(now.client);
+    now.call(async_socket(now.client));
     accepters.pop_front();
 }
 
 void io_events::read_call_back() {
     read_buffer now = readers.front();
-    now.call(fd, now.buf);
+    now.call(async_socket(fd), (void*)now.buf);
     readers.pop_front();
 }
 

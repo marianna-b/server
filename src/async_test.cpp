@@ -22,13 +22,13 @@ int main()
     size_t need2 = 20;
 
     async_socket c;
-    function<void(int)> cliFunc1 = [&](int fd) {
-        cerr << "Connection established " << fd << "!\n";
+    function<void(async_socket)> cliFunc1 = [&](async_socket client) {
+        cerr << "Connection established " << client.get_fd() << "!\n";
 
-        function<void(int)> cliFunc2 = [&](int fd1){
+        function<void(async_socket)> cliFunc2 = [&](async_socket client2){
             cerr << "Message #1 written!\n";
 
-            function<void(int, void*)> cliFunc3 = [&](int fd2, void* buf){
+            function<void(async_socket, void*)> cliFunc3 = [&](async_socket client3, void* buf){
                 cerr << "Message #2 read:  " << (char*)buf << "\n";
                 service.stop();
             };
@@ -38,15 +38,13 @@ int main()
     };
     c.set_connection(&service, ip.c_str(), port, cliFunc1);
 
-    auto servFunc1 = [&](int fd) {
-        async_socket client(fd);
-        cerr << "Client accepted " << fd << "!\n";
+    function<void(async_socket)> servFunc1 = [&](async_socket client) {
+        cerr << "Client accepted " << client.get_fd() << "!\n";
 
-        function<void(int, void*)> servFunc2 = [&](int fd1, void* buf2) {
-            async_socket client2(fd1);
+        function<void(async_socket, void*)> servFunc2 = [&](async_socket client2, void* buf2) {
              cerr << "Message #1 read: " << (char*)buf2 << "\n";
 
-             auto servFunc3 = [&](int fd2){
+             function<void(async_socket)> servFunc3 = [&](async_socket client3){
                 cerr << "Message #2 written!\n";
              };
              client2.write(&service, m2, need2, servFunc3);

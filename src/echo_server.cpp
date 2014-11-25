@@ -13,10 +13,9 @@ int main() {
     server.bind(ip.c_str(), port);
     server.listen();
 
-    function<void(int, void*)> on_read;
+    function<void(async_socket, void*)> on_read;
 
-    auto on_get_msg = [&](int fd, void* s){
-        async_socket client(fd);
+    function<void(async_socket, void*)> on_get_msg = [&](async_socket client, void* s){
         cout << (char *) s << endl;
 
         if (string((char*)s) == "stop")
@@ -26,14 +25,12 @@ int main() {
         }
     };
 
-    on_read = [&](int fd, void* ptr) {
-        async_socket client(fd);
+    on_read = [&](async_socket client, void* ptr) {
         uint32_t length = *((uint32_t*) ptr);
         client.read(&service, length, on_get_msg);
     };
 
-    auto on_accept = [&](int fd){
-        async_socket client2(fd);
+    function<void(async_socket)>on_accept = [&](async_socket client2){
         client2.read(&service, 4, on_read);
     };
 

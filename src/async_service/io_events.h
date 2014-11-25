@@ -11,38 +11,38 @@ namespace tcp {
         char buf[256];
         size_t needed;
         size_t done;
-        std::function <void(int, void*)> call;
+        std::function <void(async_socket, void*)> call;
         read_buffer() = default;
 
-        read_buffer(size_t, std::function <void(int, void*)>);
+        read_buffer(size_t, std::function <void(async_socket, void*)>);
     };
 
     struct write_buffer {
         char buf[256];
         size_t needed;
         size_t done;
-        std::function <void(int)> call;
+        std::function <void(async_socket)> call;
 
         write_buffer() = default;
 
-        write_buffer(void *, size_t, std::function <void(int)>);
+        write_buffer(void *, size_t, std::function <void(async_socket)>);
     };
 
     struct connect_buffer {
         const char *ip;
         int port;
-        std::function <void(int)> call;
+        std::function <void(async_socket)> call;
 
         connect_buffer() = default;
-        connect_buffer(const char *, int, std::function <void(int)>);
+        connect_buffer(const char *, int, std::function <void(async_socket)>);
     };
 
     struct accept_buffer {
         int client;
-        std::function <void(int)> call;
+        std::function <void(async_socket)> call;
 
         accept_buffer() = default;
-        accept_buffer(std::function <void(int)>);
+        accept_buffer(std::function <void(async_socket)>);
     };
 
     struct io_events {

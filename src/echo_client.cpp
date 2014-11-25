@@ -13,17 +13,15 @@ int main() {
     char input[256];
     size_t input_size;
 
-    function<void(int)> on_stop = [&](int fd) {
+    function<void(async_socket)> on_stop = [&](async_socket s) {
         service.stop();
     };
 
-    function<void(int)> on_input = [&](int fd){
-        async_socket client2(fd);
+    function<void(async_socket)> on_input = [&](async_socket client2){
         cin >> input;
         input_size = string(input).size() + 1;
 
-        auto on_send = [&](int fd2){
-            async_socket client3(fd2);
+        function<void(async_socket)> on_send = [&](async_socket client3){
             if (string(input) == "stop")
                 client3.write(&service, input, input_size, on_stop);
             else

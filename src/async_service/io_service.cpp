@@ -35,14 +35,12 @@ void tcp::io_service::run() {
 
             if (efd.events[i].events & EPOLL_WRITE) {
                 if (ev->want_connect() && ev->run_connect()) {
-                    cerr << "Trying to connect! " << curr << "\n";
                     cerr << "Call of callback!\n";
                     ev->connect_call_back();
                     writer_del_epoll(&efd, curr, ev);
                 }
 
                 if (ev->want_write() && ev->run_write()) {
-                    cerr << "Trying to write! " << curr <<"\n";
                     cerr << "Call of callback!\n";
                     ev->write_call_back();
                     writer_del_epoll(&efd, curr, ev);
@@ -51,14 +49,12 @@ void tcp::io_service::run() {
 
             if (efd.events[i].events & EPOLL_READ) {
                 if (ev->want_accept() && ev->run_accept()) {
-                    cerr << "Trying to accept! " << curr <<"\n";
                     cerr << "Call of callback!\n";
                     ev->accept_call_back();
                     reader_del_epoll(&efd, curr, ev);
                 }
 
                 if (ev->want_read() && ev->run_read()) {
-                    cerr << "Trying to read! " << curr << "\n";
                     cerr << "Call of callback!\n";
                     ev->read_call_back();
                     reader_del_epoll(&efd, curr, ev);
@@ -149,21 +145,21 @@ void writer_add_epoll(epoll* efd, int fd, io_events* ev) {
         }
 }
 
-void io_service::read_waiter(int fd, size_t size, function<void(int, void*)> f) {
+void io_service::read_waiter(int fd, size_t size, function<void(async_socket, void*)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
     reader_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_read(read_buffer(size, f));
 }
 
-void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(int)> f) {
+void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(async_socket)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
     writer_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_write(write_buffer(mesg, size, f));
 }
 
-void io_service::accept_waiter(int fd, function<void(int)> f) {
+void io_service::accept_waiter(int fd, function<void(async_socket)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
 
@@ -171,7 +167,7 @@ void io_service::accept_waiter(int fd, function<void(int)> f) {
     data[fd].add_accept(accept_buffer(f));
 }
 
-void io_service::connect_waiter(int fd, const char* ip, int port, function<void(int)> f) {
+void io_service::connect_waiter(int fd, const char* ip, int port, function<void(async_socket)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
 
