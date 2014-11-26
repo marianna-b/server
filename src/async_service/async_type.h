@@ -7,13 +7,9 @@ namespace tcp {
     template <typename T>
     struct async_type {
         async_type() = delete;
-        async_type(T v) {
+        async_type(bool f, T v, std::exception e) {
             correct = true;
             value = v;
-        }
-
-        async_type(std::exception e) {
-            correct = false;
             except = e;
         }
 

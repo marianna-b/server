@@ -12,6 +12,8 @@ void writer_del_epoll(epoll*, int, io_events*);
 tcp::io_service::io_service() :efd() {
     clean = false;
     stopper = ::eventfd(10, EFD_NONBLOCK);
+    if (stopper < 0)
+        throw runtime_error(strerror(errno));
 }
 
 void tcp::io_service::run() {
@@ -31,7 +33,7 @@ void tcp::io_service::run() {
                 break;
             }
 
-            io_events* ev = &data[curr];
+            io_events *ev = &data[curr];
 
             if (efd.events[i].events & EPOLL_WRITE) {
                 if (ev->want_connect() && ev->run_connect()) {
@@ -78,11 +80,13 @@ void io_service::clean_stop() {
     cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
     clean = true;
     efd.add(stopper, EPOLL_READ);
-    ::write(stopper, "close", 6);
+    if (::write(stopper, "close", 6) < 0)
+        throw runtime_error(strerror(errno));
 }
 
 tcp::io_service::~io_service() {
-    ::close(stopper);
+    if(::close(stopper) < 0)
+        throw runtime_error(strerror(errno));
     efd.close();
 }
 
@@ -93,10 +97,8 @@ void reader_del_epoll(epoll* efd, int fd, io_events* ev) {
 
     if (r == 0)
         if (w == 0) {
-            //cerr << "READER_DEL_EPOLL " << fd << endl;
             efd->remove(fd);
         } else {
-            //cerr << "READER_DEL_MODIFY_EPOLL " << fd << endl;
             efd->modify(fd, EPOLL_WRITE);
         }
 }
@@ -108,10 +110,8 @@ void writer_del_epoll(epoll* efd, int fd, io_events* ev) {
 
     if (w == 0)
         if (r == 0) {
-            //cerr << "WRITER_DEL_EPOLL " << fd << endl;
             efd->remove(fd);
         } else {
-            //cerr << "WRITER_DEL_MODIFY_EPOLL " << fd << endl;
             efd->modify(fd, EPOLL_READ);
         }
 }
@@ -122,10 +122,8 @@ void reader_add_epoll(epoll* efd, int fd, io_events* ev) {
     size_t r = ev->get_readers();
     if (r == 0)
         if (w == 0) {
-            //cerr << "READER_ADD_EPOLL " << fd << endl;
             efd->add(fd, EPOLL_READ);
         } else {
-            //cerr << "READER_ADD_MODIFY_EPOLL " << fd << endl;
             efd->modify(fd, EPOLL_BOTH);
         }
 }
@@ -137,29 +135,27 @@ void writer_add_epoll(epoll* efd, int fd, io_events* ev) {
 
     if (w == 0)
         if (r == 0) {
-            //cerr << "WRITER_ADD_EPOLL " << fd << endl;
             efd->add(fd, EPOLL_WRITE);
         } else {
-            //cerr << "WRITER_ADD_MODIFY_EPOLL " << fd << endl;
             efd->modify(fd, EPOLL_BOTH);
         }
 }
 
-void io_service::read_waiter(int fd, size_t size, function<void(async_socket, void*)> f) {
+void io_service::read_waiter(int fd, size_t size, function<void(async_type<async_socket>, async_type<void*>)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
     reader_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_read(read_buffer(size, f));
 }
 
-void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(async_socket)> f) {
+void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(async_type<async_socket>)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
     writer_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_write(write_buffer(mesg, size, f));
 }
 
-void io_service::accept_waiter(int fd, function<void(async_socket)> f) {
+void io_service::accept_waiter(int fd, function<void(async_type<async_socket>)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
 
@@ -167,7 +163,7 @@ void io_service::accept_waiter(int fd, function<void(async_socket)> f) {
     data[fd].add_accept(accept_buffer(f));
 }
 
-void io_service::connect_waiter(int fd, const char* ip, int port, function<void(async_socket)> f) {
+void io_service::connect_waiter(int fd, const char* ip, int port, function<void(async_type<async_socket>)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
 

@@ -3,35 +3,37 @@
 #include <string.h>
 #include <iostream>
 #include "io_events.h"
+#include "async_type.h"
 
 using namespace tcp;
 using namespace std;
 
-tcp::read_buffer::read_buffer(size_t t, function<void(async_socket, void * )> function) {
+tcp::read_buffer::read_buffer(size_t t, function<void(async_type<async_socket>, async_type<void *>)> function) {
     needed = t;
     done = 0;
     call = function;
 }
 
-write_buffer::write_buffer(void *pVoid, size_t t, function<void(async_socket)> function) {
+write_buffer::write_buffer(void *pVoid, size_t t, function<void(async_type<async_socket>)> function) {
     ::memcpy(buf, pVoid, t);
     needed = t;
     done = 0;
     call = function;
 }
 
-connect_buffer::connect_buffer(char const *string, int p, function<void(async_socket)> function) {
+connect_buffer::connect_buffer(char const *string, int p, function<void(async_type<async_socket>)> function) {
     ip = string;
     port = p;
     call = function;
 }
 
-accept_buffer::accept_buffer(function<void(async_socket)> function) {
+accept_buffer::accept_buffer(function<void(async_type<async_socket>)> function) {
     call = function;
 }
 
 io_events::io_events(int i) {
     fd = i;
+    correct = true;
 }
 
 void io_events::add_accept(accept_buffer buffer) {
@@ -77,7 +79,8 @@ bool io_events::run_accept() {
     if (flag < 0) {
         accepters.push_front(now);
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            throw std::runtime_error(strerror(errno));
+            e = std::runtime_error(strerror(errno));
+            correct = false;
         }
         cerr << "We need some time!\n";
     } else {
@@ -103,7 +106,8 @@ bool io_events::run_connect() {
     int flag = ::connect(fd, (struct sockaddr *) &addr, sizeof(addr));
     if (flag < 0) {
         if (errno != EALREADY && errno != EINPROGRESS) {
-            throw std::runtime_error(strerror(errno));
+            e = std::runtime_error(strerror(errno));
+            correct = false;
         }
         cerr << "We need some time!\n";
     } else {
@@ -125,7 +129,8 @@ bool io_events::run_read() {
     if (r < 0) {
         readers.push_front(now);
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            throw std::runtime_error(strerror(errno));
+            e = std::runtime_error(strerror(errno));
+            correct = false;
         }
         cerr << "We need some time!\n";
     } else {
@@ -155,7 +160,8 @@ bool io_events::run_write() {
     if (w < 0) {
         writers.push_front(now);
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            throw std::runtime_error(strerror(errno));
+            e = std::runtime_error(strerror(errno));
+            correct = false;
         }
         cerr << "We need some time!\n";
 
@@ -173,30 +179,41 @@ bool io_events::run_write() {
 
 void io_events::write_call_back() {
     write_buffer now = writers.front();
-    now.call(async_socket(fd));
+    async_type<async_socket> async_fd(correct, async_socket(fd), e);
+
+    now.call(async_fd);
     writers.pop_front();
 }
 
 void io_events::connect_call_back() {
     connect_buffer now = connectors.front();
-    now.call(async_socket(fd));
+    async_type<async_socket> async_fd(correct, async_socket(fd), e);
+
+    now.call(async_fd);
     connectors.pop_front();
 }
 
 void io_events::accept_call_back() {
     accept_buffer now = accepters.front();
-    now.call(async_socket(now.client));
+    async_type<async_socket> async_fd(correct, async_socket(now.client), e);
+
+    now.call(async_fd);
     accepters.pop_front();
 }
 
 void io_events::read_call_back() {
     read_buffer now = readers.front();
-    now.call(async_socket(fd), (void*)now.buf);
+
+    async_type<async_socket> async_fd(correct, async_socket(fd), e);
+    async_type<void*> async_buf(correct, (void*)now.buf, e);
+
+    now.call(async_fd, async_buf);
     readers.pop_front();
 }
 
 io_events::io_events() {
     fd = -1;
+    correct = false;
 }
 
 size_t io_events::get_writers() {

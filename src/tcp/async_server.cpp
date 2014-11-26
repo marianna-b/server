@@ -34,7 +34,7 @@ int async_server::get_fd() {
     return fd;
 }
 
-void async_server::get_connection(io_service* service, function<void(async_socket)> callback) {
+void async_server::get_connection(io_service* service, function<void(async_type<async_socket>)> callback) {
     service -> accept_waiter(fd, callback);
 }
 
