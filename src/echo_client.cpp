@@ -6,7 +6,7 @@ using namespace std;
 
 int main() {
     string ip = "127.0.0.2";
-    int port = 33344;
+    int port = 33345;
 
     async_socket client;
     io_service service;
@@ -15,7 +15,7 @@ int main() {
 
     function<void(async_type<async_socket>)> on_stop = [&](async_type<async_socket> s) {
         service.stop();
-    };                signalfd_siginfo siginfo;
+    };
 
     function<void(async_type<async_socket>)> on_input = [&](async_type<async_socket> client2){
         cin >> input;
@@ -33,11 +33,6 @@ int main() {
     };
 
     client.set_connection(&service, ip.c_str(), port, on_input);
-    if (!service.run()) {
-        cerr << "SIG ARRIVED!\n";
-        client.close();
-        return 0;
-    }
-    client.close();
+    service.run();
     return 0;
 }

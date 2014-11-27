@@ -16,7 +16,7 @@ namespace tcp {
         io_service(const io_service&) = delete;
         io_service(io_service&&) = default;
 
-        bool run();
+        void run();
         void stop();
         void clean_stop();
 

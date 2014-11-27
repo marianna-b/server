@@ -1,4 +1,5 @@
 #include <string.h>
+#include <async_service/socket_pool.h>
 #include "async_server.h"
 
 using namespace std;
@@ -9,6 +10,7 @@ async_server::async_server(): fd(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 
     if (fd == -1) {
         throw runtime_error(strerror(errno));
     }
+    socket_pool::add(fd);
 }
 
 void async_server::bind(char const *ip, int port) {
@@ -39,9 +41,8 @@ void async_server::get_connection(io_service* service, function<void(async_type<
 }
 
 async_server::~async_server() {
-    //close(fd);
 }
 
 void async_server::close() {
-    ::close(fd);
+    socket_pool::remove(fd);
 }

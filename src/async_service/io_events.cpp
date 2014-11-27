@@ -3,7 +3,6 @@
 #include <string.h>
 #include <iostream>
 #include "io_events.h"
-#include "async_type.h"
 
 using namespace tcp;
 using namespace std;

@@ -2,6 +2,8 @@
 #include <iostream>
 #include "async_socket.h"
 #include <async_service/io_service.h>
+#include <async_service/socket_pool.h>
+
 using namespace std;
 using namespace tcp;
 
@@ -12,6 +14,7 @@ async_socket::async_socket()
     if (fd == -1) {
         throw runtime_error(strerror(errno));
     }
+    socket_pool::add(fd);
 }
 
 async_socket::async_socket(int cfd) {
@@ -37,5 +40,5 @@ int async_socket::get_fd() {
 }
 
 void async_socket::close() {
-    ::close(fd);
+    socket_pool::remove(fd);
 }

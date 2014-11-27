@@ -2,7 +2,6 @@
 #include <sys/eventfd.h>
 #include <iostream>
 #include <string.h>
-#include <signal.h>
 
 using namespace tcp;
 using namespace std;
@@ -17,7 +16,7 @@ tcp::io_service::io_service() :efd() {
         throw runtime_error(strerror(errno));
 }
 
-bool tcp::io_service::run() {
+void tcp::io_service::run() {
     bool running = true;
     while (running) {
         int n = efd.wait();
@@ -77,7 +76,6 @@ bool tcp::io_service::run() {
         clean = false;
         data.empty();
     }
-    return true;
 }
 
 void tcp::io_service::stop() {
