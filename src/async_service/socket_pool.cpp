@@ -1,4 +1,6 @@
 #include <unistd.h>
+#include <stdexcept>
+#include <string.h>
 #include "socket_pool.h"
 using namespace std;
 
@@ -11,7 +13,8 @@ void socket_pool::add(int i) {
 
 void socket_pool::remove(int i) {
     if (set_fd.count(i) > 0) {
-        ::close(i);
+        if (::close(i) < 0)
+            std::runtime_error(strerror(errno));
         set_fd.erase(i);
     }
 }
@@ -19,5 +22,6 @@ void socket_pool::remove(int i) {
 socket_pool::~socket_pool() {
     set<int>::iterator it = set_fd.begin();
     for (; it != set_fd.end(); it++)
-        ::close((*it));
+        if (::close((*it)) < 0)
+            std::runtime_error(strerror(errno));
 }
