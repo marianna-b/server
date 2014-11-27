@@ -9,6 +9,7 @@ int main() {
     int port = 33344;
 
     async_server server;
+    async_socket client_server;
     io_service service;
     server.bind(ip.c_str(), port);
     server.listen();
@@ -32,11 +33,18 @@ int main() {
     };
 
     function<void(async_type<async_socket>)>on_accept = [&](async_type<async_socket> client2){
+        client_server = client2.get();
         client2.get().read(&service, 4, on_read);
     };
 
     server.get_connection(&service, on_accept);
-    service.run();
+    if (!service.run()) {
+        cerr << "SIG ARRIVED!\n";
+        server.close();
+        client_server.close();
+        return 0;
+    }
     server.close();
+    client_server.close();
     return 0;
 }

@@ -1,5 +1,6 @@
 #include <functional>
 #include <map>
+#include <sys/signalfd.h>
 #include "epoll.h"
 #include "io_events.h"
 
@@ -15,7 +16,7 @@ namespace tcp {
         io_service(const io_service&) = delete;
         io_service(io_service&&) = default;
 
-        void run();
+        bool run();
         void stop();
         void clean_stop();
 

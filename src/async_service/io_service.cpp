@@ -2,6 +2,7 @@
 #include <sys/eventfd.h>
 #include <iostream>
 #include <string.h>
+#include <signal.h>
 
 using namespace tcp;
 using namespace std;
@@ -16,7 +17,7 @@ tcp::io_service::io_service() :efd() {
         throw runtime_error(strerror(errno));
 }
 
-void tcp::io_service::run() {
+bool tcp::io_service::run() {
     bool running = true;
     while (running) {
         int n = efd.wait();
@@ -29,6 +30,13 @@ void tcp::io_service::run() {
             if (curr == stopper) {
                 cerr << "Trying to stop service!\n";
                 cerr << "Success!\n";
+                char c[256];
+                if (::read(stopper, c, sizeof(uint64_t)) < 0)
+                    throw runtime_error(strerror(errno));
+
+                uint64_t f = *((uint64_t*) c);
+                if (f == 2)
+                    clean = true;
                 running = false;
                 break;
             }
@@ -67,20 +75,24 @@ void tcp::io_service::run() {
     if (clean) {
         efd = epoll();
         clean = false;
+        data.empty();
     }
+    return true;
 }
 
 void tcp::io_service::stop() {
     cerr << "SERVICE STOP REQUEST SENT!\n";
     efd.add(stopper, EPOLL_READ);
-    ::write(stopper, "close", 6);
+    uint64_t a = 1;
+    if (::write(stopper, &a, sizeof(uint64_t)) < 0)
+        throw runtime_error(strerror(errno));
 }
 
 void io_service::clean_stop() {
     cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
-    clean = true;
+    uint64_t a = 2;
     efd.add(stopper, EPOLL_READ);
-    if (::write(stopper, "close", 6) < 0)
+    if (::write(stopper, &a, sizeof(uint64_t)) < 0)
         throw runtime_error(strerror(errno));
 }
 

@@ -15,7 +15,7 @@ int main() {
 
     function<void(async_type<async_socket>)> on_stop = [&](async_type<async_socket> s) {
         service.stop();
-    };
+    };                signalfd_siginfo siginfo;
 
     function<void(async_type<async_socket>)> on_input = [&](async_type<async_socket> client2){
         cin >> input;
@@ -33,7 +33,11 @@ int main() {
     };
 
     client.set_connection(&service, ip.c_str(), port, on_input);
-    service.run();
+    if (!service.run()) {
+        cerr << "SIG ARRIVED!\n";
+        client.close();
+        return 0;
+    }
     client.close();
     return 0;
 }
