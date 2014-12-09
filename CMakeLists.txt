@@ -15,9 +15,6 @@ set(SOURCES
                     src/async_service/io_service.cpp
                     src/async_service/io_events.h
                     src/async_service/io_events.cpp
-                    src/async_service/socket_pool.h
-                    src/async_service/socket_pool.cpp
-                    src/async_service/async_type.h
                     )
 
 add_executable(async_test ${SOURCES} src/async_test.cpp)

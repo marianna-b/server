@@ -1,8 +1,7 @@
 #include <string.h>
 #include <iostream>
-#include "async_socket.h"
 #include <async_service/io_service.h>
-#include <async_service/socket_pool.h>
+#include "async_socket.h"
 
 using namespace std;
 using namespace tcp;
@@ -14,31 +13,36 @@ async_socket::async_socket()
     if (fd == -1) {
         throw runtime_error(strerror(errno));
     }
-    socket_pool::add(fd);
 }
 
 async_socket::async_socket(int cfd) {
     fd = cfd;
 }
 
-void async_socket::set_connection(io_service *service, char const *ip, int port, function<void(async_type<async_socket>)> f) {
-    service->connect_waiter(fd, ip, port, f);
+void async_socket::set_connection(io_service *service, char const *ip, int port, function<void(std::string, async_socket*)> f) {
+    services.insert(service);
+    service->connect_waiter(this, ip, port, f);
 }
 
-void async_socket::read(io_service *service, size_t t, function<void(async_type<async_socket>, async_type<void*>)> f) {
-    service->read_waiter(fd, t, f);
+void async_socket::read(io_service *service, size_t t, function<void(std::string, async_socket*, void*)> f) {
+    services.insert(service);
+    service->read_waiter(this, t, f);
 }
 
-void async_socket::write(io_service *service, void *msg, size_t t, function<void(async_type<async_socket>)> f) {
-    service->write_waiter(fd, msg, t, f);
+void async_socket::write(io_service *service, void *msg, size_t t, function<void(std::string, async_socket*)> f) {
+    services.insert(service);
+    service->write_waiter(this, msg, t, f);
 }
 
-async_socket::~async_socket() {}
+async_socket::~async_socket() {
+    ::close(fd);
+    std::set<io_service*>::iterator it = services.begin();
+    for (it; it != services.end(); ++it) {
+        io_service* service = *it;
+        service->data.erase(fd);
+    }
+}
 
 int async_socket::get_fd() {
     return fd;
-}
-
-void async_socket::close() {
-    socket_pool::remove(fd);
 }

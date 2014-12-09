@@ -15,6 +15,7 @@ namespace tcp {
         io_service();
         io_service(const io_service&) = delete;
         io_service(io_service&&) = default;
+        bool operator < (const io_service&) const;
 
         void run();
         void stop();
@@ -26,11 +27,12 @@ namespace tcp {
     private:
         friend class async_server;
         friend class async_socket;
+        friend class io_events;
 
-        void read_waiter(int, size_t, std::function <void(async_type<async_socket>, async_type<void*>)>);
-        void write_waiter(int, void*, size_t, std::function <void(async_type<async_socket>)>);
-        void accept_waiter(int, std::function <void(async_type<async_socket>)>);
-        void connect_waiter(int, const char*, int, std::function <void(async_type<async_socket>)>);
+        void read_waiter(async_socket*, size_t, std::function <void(std::string, async_socket*, void*)>);
+        void write_waiter(async_socket*, void*, size_t, std::function <void(std::string, async_socket*)>);
+        void accept_waiter(int, std::function <void(std::string, async_socket*)>);
+        void connect_waiter(async_socket*, const char*, int, std::function <void(std::string, async_socket*)>);
 
         bool clean;
         epoll efd;

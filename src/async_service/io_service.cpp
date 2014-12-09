@@ -1,6 +1,7 @@
 #include "io_service.h"
 #include <sys/eventfd.h>
 #include <iostream>
+#include <string>
 #include <string.h>
 
 using namespace tcp;
@@ -45,28 +46,28 @@ void tcp::io_service::run() {
             if (efd.events[i].events & EPOLL_WRITE) {
                 if (ev->want_connect() && ev->run_connect()) {
                     cerr << "Call of callback!\n";
-                    ev->connect_call_back();
                     writer_del_epoll(&efd, curr, ev);
+                    ev->connect_call_back();
                 }
 
                 if (ev->want_write() && ev->run_write()) {
                     cerr << "Call of callback!\n";
-                    ev->write_call_back();
                     writer_del_epoll(&efd, curr, ev);
+                    ev->write_call_back();
                 }
             }
 
             if (efd.events[i].events & EPOLL_READ) {
                 if (ev->want_accept() && ev->run_accept()) {
                     cerr << "Call of callback!\n";
-                    ev->accept_call_back();
                     reader_del_epoll(&efd, curr, ev);
+                    ev->accept_call_back();
                 }
 
                 if (ev->want_read() && ev->run_read()) {
                     cerr << "Call of callback!\n";
-                    ev->read_call_back();
                     reader_del_epoll(&efd, curr, ev);
+                    ev->read_call_back();
                 }
             }
         }
@@ -105,7 +106,7 @@ void reader_del_epoll(epoll* efd, int fd, io_events* ev) {
     size_t w = ev->get_writers();
     size_t r = ev->get_readers();
 
-    if (r == 0)
+    if (r == 1)
         if (w == 0) {
             efd->remove(fd);
         } else {
@@ -118,7 +119,7 @@ void writer_del_epoll(epoll* efd, int fd, io_events* ev) {
     size_t w = ev->get_writers();
     size_t r = ev->get_readers();
 
-    if (w == 0)
+    if (w == 1)
         if (r == 0) {
             efd->remove(fd);
         } else {
@@ -151,21 +152,23 @@ void writer_add_epoll(epoll* efd, int fd, io_events* ev) {
         }
 }
 
-void io_service::read_waiter(int fd, size_t size, function<void(async_type<async_socket>, async_type<void*>)> f) {
+void io_service::read_waiter(async_socket* s, size_t size, function<void(std::string, async_socket*, void*)> f) {
+    int fd = s->get_fd();
     if (data.count(fd) == 0)
-        data[fd] = io_events(fd);
+        data[fd] = io_events(s);
     reader_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_read(read_buffer(size, f));
 }
 
-void io_service::write_waiter(int fd, void * mesg, size_t size, function<void(async_type<async_socket>)> f) {
+void io_service::write_waiter(async_socket* s, void * mesg, size_t size, function<void(std::string, async_socket*)> f) {
+    int fd = s->get_fd();
     if (data.count(fd) == 0)
-        data[fd] = io_events(fd);
+        data[fd] = io_events(s);
     writer_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_write(write_buffer(mesg, size, f));
 }
 
-void io_service::accept_waiter(int fd, function<void(async_type<async_socket>)> f) {
+void io_service::accept_waiter(int fd, function<void(std::string, async_socket*)> f) {
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
 
@@ -173,11 +176,15 @@ void io_service::accept_waiter(int fd, function<void(async_type<async_socket>)> 
     data[fd].add_accept(accept_buffer(f));
 }
 
-void io_service::connect_waiter(int fd, const char* ip, int port, function<void(async_type<async_socket>)> f) {
+void io_service::connect_waiter(async_socket* s, const char* ip, int port, function<void(std::string, async_socket*)> f) {
+    int fd = s->get_fd();
     if (data.count(fd) == 0)
-        data[fd] = io_events(fd);
+        data[fd] = io_events(s);
 
     writer_add_epoll(&efd, fd, &data[fd]);
     data[fd].add_connect(connect_buffer(ip, port, f));
 }
 
+bool io_service::operator<(io_service const &aConst) const {
+    return stopper < aConst.stopper;
+}
