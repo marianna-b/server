@@ -1,7 +1,8 @@
-#include <sys/epoll.h>
 
 #ifndef EPOLL
 #define EPOLL
+
+#include <sys/epoll.h>
 
 namespace tcp {
 

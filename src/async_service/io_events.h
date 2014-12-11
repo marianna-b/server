@@ -1,10 +1,11 @@
+
+#ifndef IO_EVENT
+#define IO_EVENT
+
 #include <sys/types.h>
 #include <deque>
 #include <functional>
 #include <tcp/async_socket.h>
-
-#ifndef IO_EVENT
-#define IO_EVENT
 
 namespace tcp {
     struct read_buffer {

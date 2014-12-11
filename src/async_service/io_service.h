@@ -1,12 +1,12 @@
+
+#ifndef IO_SERVICE
+#define IO_SERVICE
+
 #include <functional>
 #include <map>
 #include <sys/signalfd.h>
 #include "epoll.h"
 #include "io_events.h"
-
-
-#ifndef IO_SERVICE
-#define IO_SERVICE
 
 namespace tcp {
 
