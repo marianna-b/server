@@ -45,4 +45,5 @@ async_server::~async_server() {
         io_service* service = *it;
         service->data.erase(fd);
     }
+    ::close(fd);
 }
