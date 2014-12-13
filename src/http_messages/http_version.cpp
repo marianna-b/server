@@ -1,3 +1,4 @@
+#include <iostream>
 #include "http_version.h"
 
 using namespace http;
@@ -24,6 +25,7 @@ bool http_version::operator<=(http_version const &aConst) const {
 
 
 http_version::http_version(std::string string1) {
+    std:: cerr << string1 <<  std::endl;
     std::string s = string1.substr(5, string1.size() - 5);
     unsigned long idx = s.find('.');
     x = std::stoi(s.substr(0, idx));

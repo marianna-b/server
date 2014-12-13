@@ -9,17 +9,17 @@ namespace http {
 
     struct http_body {
         http_body();
-        http_body(size_t, void*, std::string);
+        http_body(size_t, std::string, std::string);
 
-        void* get();
+        std::string get();
 
         bool is_empty();
         size_t size();
-        void add(size_t, void*);
+        void add(size_t, std::string);
 
     private:
         size_t length;
-        char buffer[1000];
+        std::string buf;
         mime_type type;
     };
 

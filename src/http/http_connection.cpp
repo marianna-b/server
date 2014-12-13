@@ -14,7 +14,7 @@ void http_connection::to_string(http_response r) {
     ::memcpy(response + resp_len, curr.c_str(), curr.length());
     resp_len += curr.length();
 
-    ::memcpy(response + resp_len, r.get_body().get(), r.get_body().size());
+    ::memcpy(response + resp_len, r.get_body().get().c_str(), r.get_body().size());
     resp_len += r.get_body().size();
 }
 

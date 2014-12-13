@@ -14,7 +14,7 @@ namespace http {
     struct http_server {
         const int MAX_CONNECTIONS = 100;
 
-        http_server(char const*, int, http_request_handler);
+        http_server(char const*, int, http_request_handler*);
         void start();
         void stop();
 
@@ -23,7 +23,7 @@ namespace http {
 
         tcp::io_service* service;
         tcp::async_server* server;
-        http_request_handler handler;
+        http_request_handler* handler;
 
         void handle_error(std::string);
         std::function<void(std::string, tcp::async_socket*)> on_connect;

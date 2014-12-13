@@ -10,13 +10,24 @@ using namespace http;
 int main()
 {
     function<http_response(http_request)> get = [&](http_request request) {
-        return http_response();
+        std::cerr << request.get_title().get() + request.get_headers().get() + request.get_body().get() << endl;
+        http_response_title title;
+        title.set_status(http_status(200, "OK"));
+        http_headers headers;
+        std::string b = "Great!";
+        int b_s = b.size();
+        headers.add_header("Content-Length", to_string(b_s));
+
+        headers.add_header("Content-Type", "text/*");
+        cout << headers.get() << endl;
+        http_body body(b.size(), b, "text/*");
+        return http_response(title, headers, body);
     };
 
     string ip = "127.0.0.1";
-    int port = 44455;
+    int port = 23335;
 
-    http_request_handler h(get, get, [](){});
+    http_request_handler* h = new http_request_handler(get, get, [](){});
     http_server server(ip.c_str(), port, h);
     server.start();
     return 0;

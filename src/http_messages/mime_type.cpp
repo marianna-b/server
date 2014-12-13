@@ -4,7 +4,6 @@
 #include "mime_type.h"
 
 http::mime_type::mime_type(std::string s) {
-    std::cerr << "MIME_TYPE" << s << std::endl;
     unsigned long idx = s.find('/');
     type = s.substr(0, idx);
     idx++;

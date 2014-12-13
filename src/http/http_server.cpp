@@ -6,7 +6,7 @@
 using namespace http;
 using namespace tcp;
 
-http::http_server::http_server(char const *s, int i, http::http_request_handler h)
+http::http_server::http_server(char const *s, int i, http::http_request_handler* h)
         : handler(h) {
     service = new io_service;
     server = new async_server;
@@ -14,10 +14,10 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler 
     server->listen();
 
     http_server::on_connect = [&](std::string s1, async_socket *asyncSocket) {
-        //handle_error(s1);
-        std::cerr << "HERE" << std::endl;
+        handle_error(s1);
         connection_map[asyncSocket] = http_connection(asyncSocket);
         asyncSocket->read_some(service, 10240, on_read_some);
+        server->get_connection(service, on_connect);
     };
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i)
@@ -27,7 +27,6 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler 
         handle_error(string);
         connection_map.erase(asyncSocket);
         delete asyncSocket;
-        server->get_connection(service, on_connect);
     };
 
 
@@ -47,7 +46,6 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler 
 
                     curr.condition = IN_TITLE;
                     curr.title = http_request_title(curr.request.substr(0, idx));
-                    std::cerr << curr.title.get() << std::endl;
                     curr.need_body = curr.title.get_method().get() == "PUT" || curr.title.get_method().get() == "POST";
 
                     idx += 2;
@@ -65,7 +63,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler 
                         curr.request = curr.request.substr(idx, curr.request.size() - idx);
                         curr.condition = IN_BODY;
                         if (curr.need_body)
-                            curr.body = http_body(curr.request.size(), (void *) curr.request.c_str(), curr.headers.get_valuse("Content-Type"));
+                            curr.body = http_body(curr.request.size(), curr.request, curr.headers.get_valuse("Content-Type"));
                         else
                             curr.body = http_body();
                         curr.request = "";
@@ -79,10 +77,10 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler 
             unsigned long idx = curr.request.find(cr_lf_p);
 
             if (idx == std::string::npos) {
-                curr.body.add(curr.request.size(), (void *) curr.request.c_str());
+                curr.body.add(curr.request.size(), curr.request);
 
                 if (std::string((char *) buf).size() == 0) {
-                    return handler.on_terminate();
+                    return handler->on_terminate();
                 }
                 if (curr.headers.is_there("Content-Length")) {
                     int i = std::stoi(curr.headers.get_valuse("Content-Length"), 0, 10);
@@ -92,7 +90,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler 
                 }
             } else {
                 std::string s2 = curr.request.substr(0, idx);
-                curr.body.add(s2.size(), (void *) s2.c_str());
+                curr.body.add(s2.size(), s2);
                 curr.request = curr.request.substr(idx, curr.request.size() - idx);
                 return on_request(asyncSocket);
             }
@@ -114,18 +112,14 @@ void http::http_server::stop() {
 
 void http_server::handle_error(std::string error) {
     //TODO error handling
-    std::cerr <<error <<std::endl;
 }
-
-
-
 
 void http_server::on_request(tcp::async_socket* s) {
     http_connection connection = connection_map[s];
     http_request request = http_request(connection.title, connection.headers, connection.body);
-    std::cerr << connection.title.get() + "\n" + connection.headers.get() + "\n\n" + (char*) connection.body.get();
-    http_response response = handler.get(connection.method)(request);
+    http_response response = handler->get(connection.title.get_method().get_method_name())(request);
     connection.to_string(response);
+    std::cerr << connection.response << std::endl;
     connection.client->write(service, connection.response, connection.resp_len, on_send);
 }
 

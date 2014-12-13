@@ -12,22 +12,24 @@ size_t http_body::size() {
     return length;
 }
 
-http_body::http_body(size_t t, void *pVoid, std::string s)
+http_body::http_body(size_t t, std::string d, std::string s)
 : type(s){
     length = t;
-    ::memcpy(buffer, pVoid, t);
+    buf = d;
 }
 
-void http_body::add(size_t t, void *pVoid) {
-    ::memcpy(buffer + length, buffer, t);
+void http_body::add(size_t t, std::string d) {
     length += t;
+    buf += d;
 }
 
 
 http_body::http_body() {
     length = 0;
+    buf = "";
+    type = mime_type("*/*");
 }
 
-void *http_body::get() {
-    return buffer;
+std::string http_body::get() {
+    return buf;
 }

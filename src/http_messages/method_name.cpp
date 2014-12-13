@@ -56,4 +56,6 @@ std::string http::method::get() {
 }
 
 
-
+http::method_name http::method::get_method_name() {
+    return name;
+}

@@ -12,15 +12,12 @@ http_request_title::http_request_title(std::string s) {
     idx++;
     s = s.substr(idx, s.size() - idx);
     method_name = method(curr);
-    std::cerr << method_name.get() << std::endl;
     idx = s.find(' ');
     curr = s.substr(0, idx);
     url = http_request_url(curr);
-    std::cerr << url.get_url() << std::endl;
     idx++;
     s = s.substr(idx, s.size() - idx);
     version = http_version(s);
-    std::cerr << version.get_version() << std::endl;
 }
 
 

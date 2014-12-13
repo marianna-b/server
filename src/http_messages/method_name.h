@@ -6,14 +6,14 @@
 namespace http {
 
     enum method_name {
-        GET,
-        HEAD,
-        POST,
-        PUT,
-        TRACE,
-        OPTIONS,
-        DELETE,
-        UNDEFINED
+        GET = 1,
+        HEAD = 2,
+        POST = 3,
+        PUT = 4,
+        TRACE = 5,
+        OPTIONS = 6,
+        DELETE = 7,
+        UNDEFINED = 8
     };
 
     struct method {
@@ -21,6 +21,7 @@ namespace http {
         method(method_name);
         method(std::string);
         std::string get();
+        method_name get_method_name();
         method_name get(std::string);
 
     private:
