@@ -22,7 +22,6 @@ namespace tcp {
         void add(int, epoll_type);
         void remove(int);
         void modify(int, epoll_type);
-        void close();
         int wait();
         ~epoll();
 

@@ -23,6 +23,7 @@ int main()
     http_client client = http_client();
     client.send(ip.c_str(), port, http_request(title, headers, http_body()), [&](http_response r){
         std::cerr << r.get_title().get() + r.get_headers().get() + r.get_body().get() << endl;
+
     });
     return 0;
 }

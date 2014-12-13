@@ -20,7 +20,7 @@ namespace tcp {
     };
 
     struct write_buffer {
-        char buf[256];
+        char buf[1000];
         size_t needed;
         size_t done;
         std::function <void(std::string, async_socket*)> call;

@@ -71,7 +71,8 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
                 }
                 idx = curr.request.find(cr_lf_p);
             }
-        } else if (curr.need_body) {
+        }
+        if (curr.condition == IN_BODY && curr.need_body) {
             curr.request += std::string((char *) buf);
             char *cr_lf_p = (char *) cr_lf_server.c_str();
             unsigned long idx = curr.request.find(cr_lf_p);
@@ -119,7 +120,7 @@ void http_server::on_request(tcp::async_socket* s) {
     http_request request = http_request(connection.title, connection.headers, connection.body);
     http_response response = handler->get(connection.title.get_method().get_method_name())(request);
     connection.to_string(response);
-    std::cerr << connection.response << std::endl;
+    std::cerr << "nanana" << connection.response << std::endl;
     connection.client->write(service, connection.response, connection.resp_len, on_send);
 }
 

@@ -98,7 +98,6 @@ void io_service::clean_stop() {
 tcp::io_service::~io_service() {
     if(::close(stopper) < 0)
         throw runtime_error(strerror(errno));
-    efd.close();
 }
 
 void reader_del_epoll(epoll* efd, int fd, io_events* ev) {

@@ -3,6 +3,7 @@
 using namespace http;
 
 void http_connection::to_string(http_response r) {
+    ::memset(response, 0, 1000);
     resp_len = 0;
     headers = http_headers();
 

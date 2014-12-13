@@ -13,14 +13,15 @@ int main()
         std::cerr << request.get_title().get() + request.get_headers().get() + request.get_body().get() << endl;
         http_response_title title;
         title.set_status(http_status(200, "OK"));
+
         http_headers headers;
         std::string b = "Great!";
         int b_s = b.size();
-        headers.add_header("Content-Length", to_string(b_s));
 
+        headers.add_header("Content-Length", to_string(b_s));
         headers.add_header("Content-Type", "text/*");
-        cout << headers.get() << endl;
         http_body body(b.size(), b, "text/*");
+
         return http_response(title, headers, body);
     };
 

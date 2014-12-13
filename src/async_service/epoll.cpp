@@ -40,10 +40,6 @@ int epoll::wait() {
 }
 
 epoll::~epoll() {
-}
-
-void epoll::close() {
     ::close(fd);
 }
-
 

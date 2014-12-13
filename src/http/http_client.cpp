@@ -22,16 +22,11 @@ http_client::http_client() {
     http_client::on_read_some = [&](std::string error, async_socket *s, void *buf) {
         std::string cr_lf_client = "\r\n";
         error_handle(error);
-        std::cerr << (char*) buf << std::endl;
         if (parse != IN_BODY) {
 
-            std::cerr << curr << std::endl;
             curr += std::string((char *) buf);
-            std::cerr << curr << std::endl;
             char *cr_lf_p = (char *) cr_lf_client.c_str();
             unsigned long idx = curr.find(cr_lf_p);
-            std::cerr << idx << std::endl;
-            std::cerr << cr_lf_p << std::endl;
 
             while (idx != std::string::npos) {
                 if (parse == OUT) {
@@ -55,19 +50,28 @@ http_client::http_client() {
                     } else {
 
                         parse = IN_BODY;
-                        body = http_body(curr.size(), curr, headers.get_valuse("Content-Type"));
+                        idx += 2;
+                        curr.substr(idx, curr.size() - idx);
+                        if (need_body)
+                            body = http_body(curr.size(), curr, headers.get_valuse("Content-Type"));
+                        else
+                            body = http_body();
+                        curr = "";
                     }
                 }
                 idx = curr.find(cr_lf_p);
             }
-        } else if (need_body) {
+        } else
+        if (parse == IN_BODY && need_body) {
             char *cr_lf_p = (char *) cr_lf_client.c_str();
             unsigned long idx = curr.find(cr_lf_p);
+            curr = std::string((char *) buf);
+            std::cerr << curr << std::endl;
 
             if (idx == std::string::npos) {
                 body.add(curr.size(), curr);
 
-                if (std::string((char *) buf).size() == 0) {
+                if (curr.size() == 0) {
                     return on_exit();
                 }
                 if (headers.is_there("Content-Length")) {
@@ -79,9 +83,11 @@ http_client::http_client() {
             } else {
                 std::string s2 = curr.substr(0, idx);
                 body.add(s2.size(), s2);
+                curr = "";
                 curr = curr.substr(idx, curr.size() - idx);
                 return on_exit();
             }
+            curr = "";
         }
         s->read_some(service, 10240, on_read_some);
     };
@@ -103,14 +109,14 @@ void http_client::to_string(http_request r) {
     request_len += r.get_body().size();
 }
 
-http_response http_client::send(char const *ip, int port, http::http_request r, std::function<void(http_response)> f) {
+void http_client::send(char const *ip, int port, http::http_request r, std::function<void(http_response)> f) {
     client = new async_socket;
-    curr = "";
     need_body = r.get_title().get_method().get() != "HEAD";
     parse = OUT;
     to_string(r);
     client->set_connection(service, ip, port, on_accept);
     on_response = f;
+    curr = "";
     service->run();
 }
 
@@ -118,17 +124,16 @@ void http_client::error_handle(std::string error) {
     // TODO handle error
 }
 
-
-
-
 void http_client::on_exit(){
     http_response response(title, headers, body);
     headers = http_headers();
     curr = "";
     memset(request, 0, sizeof request);
-    delete client;
     service->stop();
     on_response(response);
 }
 
 
+http_client::~http_client() {
+    std::cerr << "DESTRUCTIONS!!!" << std::endl;
+}

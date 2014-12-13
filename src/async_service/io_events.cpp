@@ -11,6 +11,7 @@ tcp::read_buffer::read_buffer(bool all, size_t t, function<void(std::string, asy
     read_all = all;
     needed = t;
     done = 0;
+    ::memset(buf, 0, 1000);
     call = function;
 }
 
@@ -120,8 +121,8 @@ bool io_events::run_connect() {
 bool io_events::run_read() {
     cerr << "Trying to read! " << fd << "\n";
     read_buffer now = readers.front();
-    char buffer[256];
-          void add_read(read_buffer);  size_t idx = now.done;
+    char buffer[1000];
+    size_t idx = now.done;
     size_t idx2 = now.needed;
     ssize_t r = ::recv(fd, buffer, idx2 - idx, MSG_DONTWAIT);
 

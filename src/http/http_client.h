@@ -11,7 +11,8 @@ namespace http {
     struct http_client {
 
         http_client();
-        http_response send(char const*, int, http_request, std::function<void(http_response)>);
+        void send(char const*, int, http_request, std::function<void(http_response)>);
+        ~http_client();
 
     private:
         char request[1000];
