@@ -27,6 +27,7 @@ http_version::http_version(std::string string1) {
     std::string s = string1.substr(5, string1.size() - 5);
     unsigned long idx = s.find('.');
     x = std::stoi(s.substr(0, idx));
+    idx++;
     y = std::stoi(s.substr(idx, s.size() - idx));
 }
 

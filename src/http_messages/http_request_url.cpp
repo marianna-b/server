@@ -9,15 +9,22 @@ http_request_url::http_request_url() {
 }
 
 http_request_url::http_request_url(std::string s) {
-    unsigned long idx = s.find(';');
-    path = s.substr(0, idx);   path = "";
-    s = s.substr(idx, s.size() - idx);
+    unsigned long idx = s.find('#');
+    if (idx != std::string::npos) {
+        frag = s.substr(idx + 1, s.size() - idx - 1);
+        s = s.substr(0, idx);
+    }
     idx = s.find('?');
-    params = s.substr(0, idx);
-    s = s.substr(idx, s.size() - idx);
-    idx = s.find('#');
-    query = s.substr(0, idx);
-    frag = s.substr(idx, s.size() - idx);
+    if (idx != std::string::npos) {
+        query = s.substr(idx + 1, s.size() - idx - 1);
+        s = s.substr(0, idx);
+    }
+    idx = s.find(';');
+    if (idx != std::string::npos) {
+        params = s.substr(idx + 1, s.size() - idx - 1);
+        s = s.substr(0, idx);
+    }
+    path = s;
 }
 
 

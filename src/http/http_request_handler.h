@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <set>
+#include <map>
 #include "http_response.h"
 #include "http_request.h"
 
@@ -10,24 +11,14 @@ namespace http {
     struct http_request_handler {
 
         http_request_handler(std::function<http::http_response(http::http_request)>,
-                std::function<http::http_response(http::http_request)>); // set get and head
-        void set_post(std::function<http::http_response(http::http_request)>);
-        void set_put(std::function<http::http_response(http::http_request)>);
-        void set_trace(std::function<http::http_response(http::http_request)>);
-        void set_options(std::function<http::http_response(http::http_request)>);
-        void set_delete(std::function<http::http_response(http::http_request)>);
-
+                std::function<http::http_response(http::http_request)>, std::function<void()>); // set get and head
         std::function<http::http_response(http::http_request)> get(method_name);
-
+        bool is_implemented(method_name);
+        void set(method_name, std::function<http::http_response(http::http_request)>);
+        void on_terminate();
     private:
-        std::set <http::method_name> implemented;
-        std::function<http::http_response(http::http_request)> do_get;
-        std::function<http::http_response(http::http_request)> do_head;
-        std::function<http::http_response(http::http_request)> do_post;
-        std::function<http::http_response(http::http_request)> do_put;
-        std::function<http::http_response(http::http_request)> do_trace;
-        std::function<http::http_response(http::http_request)> do_options;
-        std::function<http::http_response(http::http_request)> do_delete;
+        std::map <http::method_name, std::function<http::http_response(http::http_request)> > handler_map;
+        std::function<void()> on_term;
     };
 }
 

@@ -31,3 +31,7 @@ http_status http_response_title::get_status() {
 http_version http_response_title::get_version() {
     return version;
 }
+
+std::string http_response_title::get() {
+    return version.get_version() + " " + std::to_string(status.get_code()) + " " + status.get_reason() + "\r\n";
+}

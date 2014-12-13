@@ -33,3 +33,6 @@ http_body http_response::get_body() {
 bool http_response::has_body() {
     return body.is_empty();
 }
+
+http_response::http_response() {
+}

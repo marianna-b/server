@@ -34,7 +34,7 @@ http::method::method(std::string s) {
     name = get(s);
 }
 
-char const* http::method::get() {
+std::string http::method::get() {
     switch (name) {
         case GET:
             return "GET";

@@ -20,7 +20,7 @@ namespace http {
         method();
         method(method_name);
         method(std::string);
-        char const* get();
+        std::string get();
         method_name get(std::string);
 
     private:

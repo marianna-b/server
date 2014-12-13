@@ -19,10 +19,15 @@ http_body::http_body(size_t t, void *pVoid, std::string s)
 }
 
 void http_body::add(size_t t, void *pVoid) {
-    ::memcpy((char*)buffer + length, buffer, t);
+    ::memcpy(buffer + length, buffer, t);
     length += t;
 }
 
 
+http_body::http_body() {
+    length = 0;
+}
 
-
+void *http_body::get() {
+    return buffer;
+}

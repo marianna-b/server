@@ -14,6 +14,8 @@ namespace http {
 
         http_request_title(std::string);
 
+        std::string get();
+
         void set_method(method);
 
         void set_url(http_request_url);

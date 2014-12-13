@@ -6,6 +6,12 @@
 #include <http_messages/http_body.h>
 
 namespace http {
+    enum parse_condition{
+        OUT,
+        IN_TITLE,
+        IN_HEADER,
+        IN_BODY
+    };
 
     struct http_request {
         http_request(http_request_title, http_headers, http_body);

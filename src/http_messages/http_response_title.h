@@ -13,6 +13,8 @@ namespace http {
         http_response_title(); // default HTTP/1.1, 500, "Internal Server Error"
         http_response_title(std::string);
 
+        std::string get();
+
         void set_status(http_status);
 
         void set_version(http_version);

@@ -8,7 +8,10 @@
 namespace http {
 
     struct http_body {
+        http_body();
         http_body(size_t, void*, std::string);
+
+        void* get();
 
         bool is_empty();
         size_t size();
@@ -16,7 +19,7 @@ namespace http {
 
     private:
         size_t length;
-        void* buffer;
+        char buffer[1000];
         mime_type type;
     };
 

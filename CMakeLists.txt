@@ -17,6 +17,8 @@ set(SOURCES
                     src/async_service/io_events.cpp
                     src/http/http_client.h
                     src/http/http_client.cpp
+                    src/http/http_connection.h
+                    src/http/http_connection.cpp
                     src/http/http_server.h
                     src/http/http_server.cpp
                     src/http_messages/http_body.h
@@ -48,3 +50,5 @@ set(SOURCES
 add_executable(async_test ${SOURCES} src/socket_tests/async_test.cpp)
 add_executable(echo_client ${SOURCES} src/socket_tests/echo_client.cpp)
 add_executable(echo_server ${SOURCES} src/socket_tests/echo_server.cpp)
+add_executable(http_simple ${SOURCES} src/http_test/http_simple.cpp)
+add_executable(http_simple2 ${SOURCES} src/http_test/http_simple2.cpp)

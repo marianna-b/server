@@ -8,6 +8,7 @@
 namespace http {
 
     struct http_response {
+        http_response();
         http_response(http_response_title, http_headers, http_body);
 
         void set_title(http_response_title);

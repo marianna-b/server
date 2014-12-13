@@ -1,6 +1,7 @@
 #include <string.h>
 #include <iostream>
 #include <async_service/io_service.h>
+#include <printf.h>
 #include "async_socket.h"
 
 using namespace std;
@@ -35,14 +36,20 @@ void async_socket::write(io_service *service, void *msg, size_t t, function<void
 }
 
 async_socket::~async_socket() {
-    ::close(fd);
     std::set<io_service*>::iterator it = services.begin();
     for (it; it != services.end(); ++it) {
         io_service* service = *it;
         service->data.erase(fd);
     }
+
+    ::close(fd);
 }
 
 int async_socket::get_fd() {
     return fd;
+}
+
+void async_socket::read_some(io_service *service, size_t t, function<void(std::string, async_socket*, void*)> f) {
+    services.insert(service);
+    service->read_some_waiter(this, t, f);
 }

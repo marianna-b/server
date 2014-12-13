@@ -9,13 +9,14 @@
 
 namespace tcp {
     struct read_buffer {
-        char buf[256];
+        char buf[1000];
         size_t needed;
         size_t done;
+        bool read_all;
         std::function <void(std::string, async_socket*, void*)> call;
         read_buffer() = default;
 
-        read_buffer(size_t, std::function <void(std::string, async_socket*, void*)>);
+        read_buffer(bool, size_t, std::function <void(std::string, async_socket*, void*)>);
     };
 
     struct write_buffer {

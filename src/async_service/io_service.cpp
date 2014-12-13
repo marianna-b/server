@@ -157,7 +157,15 @@ void io_service::read_waiter(async_socket* s, size_t size, function<void(std::st
     if (data.count(fd) == 0)
         data[fd] = io_events(s);
     reader_add_epoll(&efd, fd, &data[fd]);
-    data[fd].add_read(read_buffer(size, f));
+    data[fd].add_read(read_buffer(true, size, f));
+}
+
+void io_service::read_some_waiter(async_socket* s, size_t size, function<void(std::string, async_socket*, void*)> f) {
+    int fd = s->get_fd();
+    if (data.count(fd) == 0)
+        data[fd] = io_events(s);
+    reader_add_epoll(&efd, fd, &data[fd]);
+    data[fd].add_read(read_buffer(false, size, f));
 }
 
 void io_service::write_waiter(async_socket* s, void * mesg, size_t size, function<void(std::string, async_socket*)> f) {
