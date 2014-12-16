@@ -39,7 +39,8 @@ std::string http_request::get() {
     return get_title().get() + get_headers().get() + get_body().get();
 }
 
-size_t http_request::get_to(void *request, size_t size) {
+size_t http_request::get_to(void *r, size_t size) {
+    char* request = (char*)r;
     ::memset(request, 0, size);
     size_t request_len = 0;
 

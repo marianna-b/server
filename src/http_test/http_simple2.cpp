@@ -2,14 +2,11 @@
 #include <iostream>
 #include <string>
 
-using namespace std;
-using namespace tcp;
-using namespace http;
+using namespace std; using namespace tcp; using namespace http;
 
-int main()
-{
+int main() {
     string ip = "127.0.0.1";
-    int port = 23335;
+    int port = 33335;
     http_request_title title;
     title.set_method(GET);
     title.set_url(http_request_url("/kdsjflskdjflskj"));
@@ -19,11 +16,9 @@ int main()
     headers.add_header("kdjfskjfwekjf", "eruehufew");
     headers.add_header("jdfhks", "fjfjfjfjf");
     headers.add_header("Content-Type", "text/*");
-
-    http_client client = http_client();
-    client.send(ip.c_str(), port, http_request(title, headers, http_body()), [&](http_response r){
+    http_client client = http_client(ip.c_str(), port);
+    client.send(http_request(title, headers, http_body()), [&](http_response r) {
         std::cerr << r.get_title().get() + r.get_headers().get() + r.get_body().get() << endl;
-
     });
     return 0;
 }

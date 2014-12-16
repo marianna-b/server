@@ -20,15 +20,15 @@ int main()
 
         headers.add_header("Content-Length", to_string(b_s));
         headers.add_header("Content-Type", "text/*");
-        http_body body(b.size(), b, "text/*");
+        http_body body(b, "text/*");
 
         return http_response(title, headers, body);
     };
 
     string ip = "127.0.0.1";
-    int port = 23335;
+    int port = 33335;
 
-    http_request_handler* h = new http_request_handler(get, get, [](){});
+    http_request_handler* h = new http_request_handler(get, get, [](int){});
     http_server server(ip.c_str(), port, h);
     server.start();
     return 0;

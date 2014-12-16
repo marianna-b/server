@@ -3,7 +3,7 @@ using namespace http;
 using namespace std;
 
 http::http_request_handler::http_request_handler(function < http_response(http_request) > get,
-        function < http_response(http_request) > head, function<void()> t) {
+        function < http_response(http_request) > head, function<void(int)> t) {
     handler_map[GET] = get;
     handler_map[HEAD] = head;
     on_term = t;
@@ -22,6 +22,6 @@ void http_request_handler::set(method_name name, function<http_response(http_req
     handler_map[name] = f;
 }
 
-void http_request_handler::on_terminate() {
-    on_term();
+void http_request_handler::on_terminate(int i) {
+    on_term(i);
 }

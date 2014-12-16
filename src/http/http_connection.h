@@ -14,10 +14,8 @@ namespace http {
 
         http_connection();
         http_connection(tcp::async_socket *);
-
+        ~http_connection();
         void to_string(http_response);
-
-        //TODO add destructor with deleting client member
 
         parse_condition condition;
         tcp::async_socket *client;
@@ -25,11 +23,12 @@ namespace http {
         size_t resp_len = 0;
 
         std::string request;
-        method_name method; // TODO why no use
         bool need_body;
         http_request_title title;
         http_headers headers;
         http_body body;
+    private:
+        bool no_del = true;
     };
 
 }

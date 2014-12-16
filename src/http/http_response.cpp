@@ -44,10 +44,10 @@ std::string http_response::get() {
     return get_title().get() + get_headers().get() + get_body().get();
 }
 
-size_t http_response::get_to(void *response, size_t t) {
+size_t http_response::get_to(void *r, size_t t) {
+    char* response = (char*) r;
     ::memset(response, 0, t);
     size_t resp_len = 0;
-    headers = http_headers();
 
     std::string curr = get_title().get();
     ::memcpy(response, curr.c_str(), curr.length());

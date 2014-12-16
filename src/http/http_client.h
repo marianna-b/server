@@ -10,8 +10,8 @@ namespace http {
 
     struct http_client {
 
-        http_client();
-        void send(char const*, int, http_request, std::function<void(http_response)>);
+        http_client(char const*, int);
+        void send(http_request, std::function<void(http_response)>);
         ~http_client();
 
     private:
@@ -23,8 +23,10 @@ namespace http {
 
         tcp::async_socket* client;
         tcp::io_service* service;
-        void error_handle(int);
+        bool handle_error(int);
         void on_exit();
+        void on_no_body_data();
+        void on_body_data(size_t);
 
         std::function<void(int, tcp::async_socket*)> on_accept;
         std::function<void(int, tcp::async_socket*)> on_write;
