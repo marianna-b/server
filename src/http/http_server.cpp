@@ -2,7 +2,6 @@
 #include <iostream>
 #include "http_server.h"
 
-
 using namespace http;
 using namespace tcp;
 
@@ -13,25 +12,27 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
     server->bind(s, i);
     server->listen();
 
-    http_server::on_connect = [&](std::string s1, async_socket *asyncSocket) {
+    http_server::on_connect = [&](int s1, async_socket *asyncSocket) {
         handle_error(s1);
         connection_map[asyncSocket] = http_connection(asyncSocket);
-        asyncSocket->read_some(service, 10240, on_read_some);
+        asyncSocket->read_some(service, 1000, on_read_some);
         server->get_connection(service, on_connect);
     };
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i)
         server->get_connection(service, on_connect);
 
-    http_server::on_send = [&](std::string string, async_socket *asyncSocket) {
-        handle_error(string);
+    http_server::on_send = [&](int error, async_socket *asyncSocket) {
+        handle_error(error);
         connection_map.erase(asyncSocket);
         delete asyncSocket;
     };
 
 
-    http_server::on_read_some = [&](std::string string, async_socket *asyncSocket, void *buf) {
-        handle_error(string);
+    http_server::on_read_some = [&](int error, async_socket *asyncSocket, void *buf) {
+        handle_error(error); // TODO make bool
+
+        // TODO split into different
 
         http_connection curr = connection_map[asyncSocket];
         std::string cr_lf_server = "\r\n";
@@ -81,7 +82,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
                 curr.body.add(curr.request.size(), curr.request);
 
                 if (std::string((char *) buf).size() == 0) {
-                    return handler->on_terminate();
+                    return handler->on_terminate(); // TODO wtf??
                 }
                 if (curr.headers.is_there("Content-Length")) {
                     int i = std::stoi(curr.headers.get_valuse("Content-Length"), 0, 10);
@@ -92,14 +93,14 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
             } else {
                 std::string s2 = curr.request.substr(0, idx);
                 curr.body.add(s2.size(), s2);
-                curr.request = curr.request.substr(idx, curr.request.size() - idx);
+                curr.request = curr.request.substr(idx, curr.request.size() - idx); // TODO wtf??
                 return on_request(asyncSocket);
             }
         }
         connection_map[asyncSocket] = curr;
         if (curr.condition == IN_BODY && !curr.need_body)
             return on_request(asyncSocket);
-        asyncSocket->read_some(service, 10240, on_read_some);
+        asyncSocket->read_some(service, 1000, on_read_some);
     };
 }
 
@@ -111,7 +112,7 @@ void http::http_server::stop() {
     service->stop();
 }
 
-void http_server::handle_error(std::string error) {
+void http_server::handle_error(int error) {
     //TODO error handling
 }
 
@@ -120,7 +121,6 @@ void http_server::on_request(tcp::async_socket* s) {
     http_request request = http_request(connection.title, connection.headers, connection.body);
     http_response response = handler->get(connection.title.get_method().get_method_name())(request);
     connection.to_string(response);
-    std::cerr << "nanana" << connection.response << std::endl;
     connection.client->write(service, connection.response, connection.resp_len, on_send);
 }
 

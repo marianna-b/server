@@ -34,16 +34,17 @@ int async_server::get_fd() {
     return fd;
 }
 
-void async_server::get_connection(io_service* service, function<void(std::string, async_socket*)> callback) {
+void async_server::get_connection(io_service* service, function<void(int, async_socket*)> callback) {
     services.insert(service);
-    service -> accept_waiter(fd, callback);
+    service -> accept_waiter(this, callback);
 }
 
 async_server::~async_server() {
     std::set<io_service*>::iterator it = services.begin();
-    for (it; it != services.end(); ++it) {
+    for (; it != services.end(); ++it) {
         io_service* service = *it;
         service->data.erase(fd);
     }
+
     ::close(fd);
 }

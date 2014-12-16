@@ -17,13 +17,15 @@ namespace http {
 
         void to_string(http_response);
 
+        //TODO add destructor with deleting client member
+
         parse_condition condition;
         tcp::async_socket *client;
         char response[1000];
         size_t resp_len = 0;
 
         std::string request;
-        method_name method;
+        method_name method; // TODO why no use
         bool need_body;
         http_request_title title;
         http_headers headers;

@@ -25,11 +25,11 @@ namespace tcp {
         int wait();
         ~epoll();
 
-        epoll_event events[100];
+        epoll_event events[1000];
     private:
         int fd;
         int timeout = 10;
-        static const int MAX_EVENTS = 100;
+        static const int MAX_EVENTS = 1000;
     };
 
 }

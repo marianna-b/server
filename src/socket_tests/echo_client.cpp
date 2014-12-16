@@ -13,15 +13,15 @@ int main() {
     char input[256];
     size_t input_size;
 
-    function<void(std::string, async_socket*)> on_stop = [&](std::string, async_socket* s) {
+    function<void(int, async_socket*)> on_stop = [&](int, async_socket* s) {
         service.stop();
     };
 
-    function<void(std::string, async_socket*)> on_input = [&](std::string, async_socket* client2){
+    function<void(int, async_socket*)> on_input = [&](int, async_socket* client2){
         cin >> input;
         input_size = string(input).size() + 1;
 
-        function<void(std::string, async_socket*)> on_send = [&](std::string, async_socket* client3){
+        function<void(int, async_socket*)> on_send = [&](int, async_socket* client3){
             if (string(input) == "stop")
                 client3->write(&service, input, input_size, on_stop);
             else

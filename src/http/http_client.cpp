@@ -8,20 +8,20 @@ using namespace http;
 http_client::http_client() {
     service = new io_service;
 
-    http_client::on_accept = [&](std::string error, async_socket *s) {
+    http_client::on_accept = [&](int error, async_socket *s) {
         error_handle(error);
         s->write(service, request, request_len, on_write);
         curr = "";
     };
 
-    http_client::on_write = [&](std::string error, async_socket *s) {
+    http_client::on_write = [&](int error, async_socket *s) {
         error_handle(error);
-        s->read_some(service, 10240, on_read_some);
+        s->read_some(service, 1000, on_read_some);
     };
 
-    http_client::on_read_some = [&](std::string error, async_socket *s, void *buf) {
-        std::string cr_lf_client = "\r\n";
-        error_handle(error);
+    http_client::on_read_some = [&](int error, async_socket *s, void *buf) {
+        std::string cr_lf_client = "\r\n"; // TODO split to different function
+        error_handle(error); // TODO make bool
         if (parse != IN_BODY) {
 
             curr += std::string((char *) buf);
@@ -89,7 +89,7 @@ http_client::http_client() {
             }
             curr = "";
         }
-        s->read_some(service, 10240, on_read_some);
+        s->read_some(service, 1000, on_read_some);
     };
 }
 
@@ -110,7 +110,7 @@ void http_client::to_string(http_request r) {
 }
 
 void http_client::send(char const *ip, int port, http::http_request r, std::function<void(http_response)> f) {
-    client = new async_socket;
+    client = new async_socket; // TODO move to constructer
     need_body = r.get_title().get_method().get() != "HEAD";
     parse = OUT;
     to_string(r);
@@ -120,7 +120,7 @@ void http_client::send(char const *ip, int port, http::http_request r, std::func
     service->run();
 }
 
-void http_client::error_handle(std::string error) {
+void http_client::error_handle(int error) {
     // TODO handle error
 }
 
@@ -135,5 +135,5 @@ void http_client::on_exit(){
 
 
 http_client::~http_client() {
-    std::cerr << "DESTRUCTIONS!!!" << std::endl;
+    std::cerr << "DESTRUCTIONS!!!" << std::endl; // TODO delete async_socket
 }

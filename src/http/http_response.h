@@ -11,6 +11,9 @@ namespace http {
         http_response();
         http_response(http_response_title, http_headers, http_body);
 
+        // TODO std::string get();
+        // TODO void get_to(void*);
+
         void set_title(http_response_title);
         void set_headers(http_headers);
         void set_body(http_body);

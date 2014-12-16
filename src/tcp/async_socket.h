@@ -18,10 +18,10 @@ namespace tcp {
         async_socket(async_socket &&) = default;
 
         async_socket& operator=(const async_socket&) = default;
-        void set_connection(struct io_service*, char const* ip, int port, std::function<void(std::string, async_socket*)>);
-        void read(struct io_service*, size_t, std::function<void(std::string, async_socket*, void*)>);
-        void read_some(struct io_service*, size_t, std::function<void(std::string, async_socket*, void*)>);
-        void write(struct io_service*, void*, size_t, std::function<void(std::string, async_socket*)>);
+        void set_connection(struct io_service*, char const* ip, int port, std::function<void(int, async_socket*)>);
+        void read(struct io_service*, size_t, std::function<void(int, async_socket*, void*)>);
+        void read_some(struct io_service*, size_t, std::function<void(int, async_socket*, void*)>);
+        void write(struct io_service*, void*, size_t, std::function<void(int, async_socket*)>);
         ~async_socket();
 
         int get_fd();

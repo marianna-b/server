@@ -31,13 +31,13 @@ int main()
     async_socket* c = new async_socket();
     async_socket* cs = new async_socket();
 
-    function<void(std::string, async_socket*)> cliFunc1 = [&](std::string, async_socket* client) {
+    function<void(int, async_socket*)> cliFunc1 = [&](int, async_socket* client) {
         cerr << "Connection established " << client->get_fd() << "!\n";
 
-        function<void(std::string, async_socket*)> cliFunc2 = [&](std::string, async_socket* client2){
+        function<void(int, async_socket*)> cliFunc2 = [&](int, async_socket* client2){
             cerr << "Message #1 written!\n";
 
-            function<void(std::string, async_socket*, void*)> cliFunc3 = [&](std::string, async_socket* client3, void* buf){
+            function<void(int, async_socket*, void*)> cliFunc3 = [&](int, async_socket* client3, void* buf){
                 cerr << "Message #2 read:  " << (char*)buf << "\n";
                 service.stop();
             };
@@ -47,14 +47,14 @@ int main()
     };
     c->set_connection(&service, ip.c_str(), port, cliFunc1);
 
-    function<void(std::string, async_socket*)> servFunc1 = [&](std::string, async_socket* client) {
+    function<void(int, async_socket*)> servFunc1 = [&](int, async_socket* client) {
         cs = client;
         cerr << "Client accepted " << client->get_fd() << "!\n";
 
-        function<void(std::string, async_socket*, void*)> servFunc2 = [&](std::string, async_socket* client2, void* buf2) {
+        function<void(int, async_socket*, void*)> servFunc2 = [&](int, async_socket* client2, void* buf2) {
              cerr << "Message #1 read: " << (char*)buf2 << "\n";
 
-             function<void(std::string, async_socket*)> servFunc3 = [&](std::string, async_socket* client3){
+             function<void(int, async_socket*)> servFunc3 = [&](int, async_socket* client3){
                 cerr << "Message #2 written!\n";
              };
              client2->write(&service, m2, need2, servFunc3);

@@ -23,12 +23,12 @@ namespace http {
 
         tcp::async_socket* client;
         tcp::io_service* service;
-        void error_handle(std::string);
+        void error_handle(int);
         void on_exit();
 
-        std::function<void(std::string, tcp::async_socket*)> on_accept;
-        std::function<void(std::string, tcp::async_socket*)> on_write;
-        std::function<void(std::string, tcp::async_socket*, void*)> on_read_some;
+        std::function<void(int, tcp::async_socket*)> on_accept;
+        std::function<void(int, tcp::async_socket*)> on_write;
+        std::function<void(int, tcp::async_socket*, void*)> on_read_some;
         std::function<void(http_response)> on_response;
 
         parse_condition parse;

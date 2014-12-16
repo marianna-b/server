@@ -13,38 +13,38 @@ namespace tcp {
         size_t needed;
         size_t done;
         bool read_all;
-        std::function <void(std::string, async_socket*, void*)> call;
+        std::function <void(int, async_socket*, void*)> call;
         read_buffer() = default;
 
-        read_buffer(bool, size_t, std::function <void(std::string, async_socket*, void*)>);
+        read_buffer(bool, size_t, std::function <void(int, async_socket*, void*)>);
     };
 
     struct write_buffer {
         char buf[1000];
         size_t needed;
         size_t done;
-        std::function <void(std::string, async_socket*)> call;
+        std::function <void(int, async_socket*)> call;
 
         write_buffer() = default;
 
-        write_buffer(void *, size_t, std::function <void(std::string, async_socket*)>);
+        write_buffer(void *, size_t, std::function <void(int, async_socket*)>);
     };
 
     struct connect_buffer {
         const char *ip;
         int port;
-        std::function <void(std::string, async_socket*)> call;
+        std::function <void(int, async_socket*)> call;
 
         connect_buffer() = default;
-        connect_buffer(const char *, int, std::function <void(std::string, async_socket*)>);
+        connect_buffer(const char *, int, std::function <void(int, async_socket*)>);
     };
 
     struct accept_buffer {
         async_socket* client;
-        std::function <void(std::string, async_socket*)> call;
+        std::function <void(int, async_socket*)> call;
 
         accept_buffer() = default;
-        accept_buffer(std::function <void(std::string, async_socket*)>);
+        accept_buffer(std::function <void(int, async_socket*)>);
     };
 
     struct io_events {
@@ -78,12 +78,11 @@ namespace tcp {
     private:
         int fd;
         async_socket* sock;
-        bool correct;
-        std::string error;
+        int error;
         std::deque <read_buffer> readers;
         std::deque <write_buffer> writers;
         std::deque <connect_buffer> connectors;
-        std::deque <accept_buffer> accepters;
+        std::deque <accept_buffer> acceptors;
     };
 
 }

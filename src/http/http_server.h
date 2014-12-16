@@ -17,19 +17,20 @@ namespace http {
         http_server(char const*, int, http_request_handler*);
         void start();
         void stop();
+        // TODO add destructor with deleting service server handler
 
     private:
-        std::map<tcp::async_socket*, http_connection> connection_map;
+        std::map<tcp::async_socket*, http_connection> connection_map; // deleting async_socket in http_connection destructor
 
         tcp::io_service* service;
         tcp::async_server* server;
         http_request_handler* handler;
 
-        void handle_error(std::string);
-        std::function<void(std::string, tcp::async_socket*)> on_connect;
-        std::function<void(std::string, tcp::async_socket*, void*)> on_read_some;
+        void handle_error(int);
+        std::function<void(int, tcp::async_socket*)> on_connect;
+        std::function<void(int, tcp::async_socket*, void*)> on_read_some;
         void on_request(tcp::async_socket*);
-        std::function<void(std::string, tcp::async_socket*)> on_send;
+        std::function<void(int, tcp::async_socket*)> on_send;
     };
 }
 

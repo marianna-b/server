@@ -16,7 +16,7 @@ int main()
 
         http_headers headers;
         std::string b = "Great!";
-        int b_s = b.size();
+        unsigned long b_s = b.size();
 
         headers.add_header("Content-Length", to_string(b_s));
         headers.add_header("Content-Type", "text/*");

@@ -29,11 +29,11 @@ namespace tcp {
         friend class async_socket;
         friend class io_events;
 
-        void read_waiter(async_socket*, size_t, std::function <void(std::string, async_socket*, void*)>);
-        void read_some_waiter(async_socket*, size_t, std::function <void(std::string, async_socket*, void*)>);
-        void write_waiter(async_socket*, void*, size_t, std::function <void(std::string, async_socket*)>);
-        void accept_waiter(int, std::function <void(std::string, async_socket*)>);
-        void connect_waiter(async_socket*, const char*, int, std::function <void(std::string, async_socket*)>);
+        void read_waiter(async_socket*, size_t, std::function <void(int, async_socket*, void*)>);
+        void read_some_waiter(async_socket*, size_t, std::function <void(int, async_socket*, void*)>);
+        void write_waiter(async_socket*, void*, size_t, std::function <void(int, async_socket*)>);
+        void accept_waiter(struct async_server*, std::function <void(int, async_socket*)>);
+        void connect_waiter(async_socket*, const char*, int, std::function <void(int, async_socket*)>);
 
         bool clean;
         epoll efd;

@@ -7,7 +7,7 @@
 using namespace tcp;
 using namespace std;
 
-tcp::read_buffer::read_buffer(bool all, size_t t, function<void(std::string, async_socket*, void *)> function) {
+tcp::read_buffer::read_buffer(bool all, size_t t, function<void(int, async_socket*, void *)> function) {
     read_all = all;
     needed = t;
     done = 0;
@@ -15,31 +15,31 @@ tcp::read_buffer::read_buffer(bool all, size_t t, function<void(std::string, asy
     call = function;
 }
 
-write_buffer::write_buffer(void *pVoid, size_t t, function<void(std::string, async_socket*)> function) {
+write_buffer::write_buffer(void *pVoid, size_t t, function<void(int, async_socket*)> function) {
+    ::memset(buf, 0, 1000);
     ::memcpy(buf, pVoid, t);
     needed = t;
     done = 0;
     call = function;
 }
 
-connect_buffer::connect_buffer(char const *string, int p, function< void(std::string, async_socket*)> function) {
+connect_buffer::connect_buffer(char const *string, int p, function< void(int, async_socket*)> function) {
     ip = string;
     port = p;
     call = function;
 }
 
-accept_buffer::accept_buffer(function<void(std::string, async_socket*)> function) {
+accept_buffer::accept_buffer(function<void(int, async_socket*)> function) {
     call = function;
 }
 
 io_events::io_events(async_socket* s)
         : sock(s) {
     fd = s->get_fd();
-    correct = true;
 }
 
 void io_events::add_accept(accept_buffer buffer) {
-    accepters.push_back(buffer);
+    acceptors.push_back(buffer);
 }
 
 void io_events::add_connect(connect_buffer buffer) {
@@ -55,7 +55,7 @@ void io_events::add_write(write_buffer buffer) {
 }
 
 bool io_events::want_accept() {
-    return !accepters.empty();
+    return !acceptors.empty();
 }
 
 bool io_events::want_connect() {
@@ -72,21 +72,21 @@ bool io_events::want_write() {
 
 bool io_events::run_accept() {
     cerr << "Trying to accept! " << fd <<"\n";
-    accept_buffer now = accepters.front();
+    accept_buffer now = acceptors.front();
     sockaddr_in addr;
     socklen_t addr_size;
     int flag = ::accept4(fd, (sockaddr *) &addr, &addr_size, SOCK_NONBLOCK);
 
     if (flag < 0) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            error = strerror(errno);
-            correct = false;
+            error = errno;
+            return true;
         }
         cerr << "We need some time!\n";
     } else {
         now.client = new async_socket(flag);
-        accepters.pop_front();
-        accepters.push_front(now);
+        acceptors.pop_front();
+        acceptors.push_front(now);
         cerr << "Success! Client " << flag << "\n";
         return true;
     }
@@ -107,8 +107,8 @@ bool io_events::run_connect() {
     int flag = ::connect(fd, (struct sockaddr *) &addr, sizeof(addr));
     if (flag < 0) {
         if (errno != EALREADY && errno != EINPROGRESS) {
-            error = strerror(errno);
-            correct = false;
+            error = errno;
+            return true;
         }
         cerr << "We need some time!\n";
     } else {
@@ -128,12 +128,12 @@ bool io_events::run_read() {
 
     if (r < 0) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            error = strerror(errno);
-            correct = false;
+            error = errno;
+            return true;
         }
         cerr << "We need some time!\n";
     } else {
-        ::memcpy(now.buf + idx, buffer, r);
+        ::memcpy(now.buf + idx, buffer, (size_t) r);
         cerr << "Success!\n";
         cerr << "We've read " << r << "!\n";
         now.done += r;
@@ -158,11 +158,10 @@ bool io_events::run_write() {
 
     if (w < 0) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            error = strerror(errno);
-            correct = false;
+            error = errno;
+            return true;
         }
         cerr << "We need some time!\n";
-
     } else {
         cerr << "Success!\n";
         cerr << "We've written " << w << "!\n";
@@ -191,9 +190,9 @@ void io_events::connect_call_back() {
 }
 
 void io_events::accept_call_back() {
-    accept_buffer now = accepters.front();
+    accept_buffer now = acceptors.front();
 
-    accepters.pop_front();
+    acceptors.pop_front();
     now.call(error, now.client);
 }
 
@@ -206,7 +205,6 @@ void io_events::read_call_back() {
 
 io_events::io_events() {
     fd = -1;
-    correct = false;
 }
 
 size_t io_events::get_writers() {
@@ -214,7 +212,7 @@ size_t io_events::get_writers() {
 }
 
 size_t io_events::get_readers() {
-    return readers.size() + accepters.size();
+    return readers.size() + acceptors.size();
 }
 
 io_events::io_events(int i) {

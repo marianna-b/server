@@ -16,6 +16,9 @@ namespace http {
     struct http_request {
         http_request(http_request_title, http_headers, http_body);
 
+        // TODO std::string get();
+        // TODO void get_to(void*);
+
         void set_title(http_request_title);
         void set_headers(http_headers);
         void set_body(http_body);
