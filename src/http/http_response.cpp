@@ -1,3 +1,6 @@
+#include <printf.h>
+#include <glob.h>
+#include <string.h>
 #include "http_response.h"
 
 using namespace http;
@@ -35,4 +38,27 @@ bool http_response::has_body() {
 }
 
 http_response::http_response() {
+}
+
+std::string http_response::get() {
+    return get_title().get() + get_headers().get() + get_body().get();
+}
+
+size_t http_response::get_to(void *response, size_t t) {
+    ::memset(response, 0, t);
+    size_t resp_len = 0;
+    headers = http_headers();
+
+    std::string curr = get_title().get();
+    ::memcpy(response, curr.c_str(), curr.length());
+    resp_len += curr.length();
+
+    curr = get_headers().get();
+    ::memcpy(response + resp_len, curr.c_str(), curr.length());
+    resp_len += curr.length();
+
+    ::memcpy(response + resp_len, get_body().get().c_str(), get_body().size());
+    resp_len += get_body().size();
+
+    return resp_len;
 }

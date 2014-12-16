@@ -3,20 +3,7 @@
 using namespace http;
 
 void http_connection::to_string(http_response r) {
-    ::memset(response, 0, 1000);
-    resp_len = 0;
-    headers = http_headers();
-
-    std::string curr = r.get_title().get();
-    ::memcpy(response, curr.c_str(), curr.length());
-    resp_len += curr.length();
-
-    curr = r.get_headers().get();
-    ::memcpy(response + resp_len, curr.c_str(), curr.length());
-    resp_len += curr.length();
-
-    ::memcpy(response + resp_len, r.get_body().get().c_str(), r.get_body().size());
-    resp_len += r.get_body().size();
+    resp_len = r.get_to(response, 1000);
 }
 
 http_connection::http_connection(tcp::async_socket *async_socket) {

@@ -11,21 +11,16 @@ namespace http {
 
     struct http_request_title {
         http_request_title();
-
         http_request_title(std::string);
 
         std::string get();
 
         void set_method(method);
-
         void set_url(http_request_url);
-
         void set_version(http_version);
 
         method get_method();
-
         http_request_url get_url();
-
         http_version get_version();
 
     private:

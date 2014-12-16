@@ -17,6 +17,8 @@ namespace http {
         void add_header(std::string, std::string);
         void add_header(std::string);
 
+        // TODO vector<pair <std::string, std::string> > get_list();
+
         void remove_header(std::string);
         size_t size();
 

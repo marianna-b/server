@@ -47,7 +47,8 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
 
                     curr.condition = IN_TITLE;
                     curr.title = http_request_title(curr.request.substr(0, idx));
-                    curr.need_body = curr.title.get_method().get() == "PUT" || curr.title.get_method().get() == "POST";
+                    curr.need_body = curr.title.get_method().get_method_name() == PUT
+                            || curr.title.get_method().get_method_name() == POST;
 
                     idx += 2;
                     curr.request = curr.request.substr(idx, curr.request.size() - idx);
@@ -64,7 +65,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
                         curr.request = curr.request.substr(idx, curr.request.size() - idx);
                         curr.condition = IN_BODY;
                         if (curr.need_body)
-                            curr.body = http_body(curr.request.size(), curr.request, curr.headers.get_valuse("Content-Type"));
+                            curr.body = http_body(curr.request, curr.headers.get_valuse("Content-Type"));
                         else
                             curr.body = http_body();
                         curr.request = "";
@@ -79,7 +80,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
             unsigned long idx = curr.request.find(cr_lf_p);
 
             if (idx == std::string::npos) {
-                curr.body.add(curr.request.size(), curr.request);
+                curr.body.add(curr.request);
 
                 if (std::string((char *) buf).size() == 0) {
                     return handler->on_terminate(); // TODO wtf??
@@ -92,7 +93,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
                 }
             } else {
                 std::string s2 = curr.request.substr(0, idx);
-                curr.body.add(s2.size(), s2);
+                curr.body.add(s2);
                 curr.request = curr.request.substr(idx, curr.request.size() - idx); // TODO wtf??
                 return on_request(asyncSocket);
             }

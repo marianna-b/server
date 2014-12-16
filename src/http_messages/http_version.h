@@ -15,6 +15,7 @@ namespace http {
 
         bool operator <(http_version const&) const;
         bool operator <=(http_version const&) const;
+
     private:
         int x, y;
     };

@@ -12,11 +12,9 @@ namespace http {
         http_status(int, std::string);
 
         int get_code();
-
         std::string get_reason();
 
         void set_code(int);
-
         void set_reason(std::string);
 
     private:

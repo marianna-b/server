@@ -15,8 +15,8 @@ void http_status::set_code(int i) {
     code = i;
 }
 
-void http_status::set_reason(std::string string1) {
-    reason = string1;
+void http_status::set_reason(std::string s) {
+    reason = s;
 }
 
 int http_status::get_code() {

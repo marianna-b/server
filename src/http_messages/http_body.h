@@ -9,13 +9,14 @@ namespace http {
 
     struct http_body {
         http_body();
-        http_body(size_t, std::string, std::string);
+        http_body(std::string, std::string);
+        http_body(std::string);
 
         std::string get();
 
         bool is_empty();
         size_t size();
-        void add(size_t, std::string);
+        void add(std::string);
 
     private:
         size_t length;

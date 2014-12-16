@@ -5,11 +5,9 @@ http::method::method() {
     name = UNDEFINED;
 }
 
-
 http::method::method(method_name n) {
     name = n;
 }
-
 
 http::method_name http::method::get(std::string s) {
     if (s == "GET")
@@ -54,7 +52,6 @@ std::string http::method::get() {
             return "UNDEFINED";
     }
 }
-
 
 http::method_name http::method::get_method_name() {
     return name;

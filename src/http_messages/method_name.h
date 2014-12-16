@@ -20,11 +20,14 @@ namespace http {
         method();
         method(method_name);
         method(std::string);
-        std::string get();
         method_name get_method_name();
         method_name get(std::string);
 
     private:
+        friend class http_request_title;
+        friend class http_response_title;
+
+        std::string get();
         method_name name;
     };
 }

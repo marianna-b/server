@@ -16,11 +16,9 @@ namespace http {
         std::string get();
 
         void set_status(http_status);
-
         void set_version(http_version);
 
         http_status get_status();
-
         http_version get_version();
 
     private:

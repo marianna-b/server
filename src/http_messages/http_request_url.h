@@ -9,25 +9,17 @@ namespace http {
 
     struct http_request_url {
         http_request_url();
-
         http_request_url(std::string);
 
         std::string get_url();
-
         std::string get_path();
-
         std::string get_params();
-
         std::string get_query();
-
         std::string get_frag();
 
         void set_path(std::string);
-
         void set_params(std::string);
-
         void set_query(std::string);
-
         void set_frag(std::string);
 
     private:

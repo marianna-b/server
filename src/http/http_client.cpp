@@ -53,7 +53,7 @@ http_client::http_client() {
                         idx += 2;
                         curr.substr(idx, curr.size() - idx);
                         if (need_body)
-                            body = http_body(curr.size(), curr, headers.get_valuse("Content-Type"));
+                            body = http_body(curr, headers.get_valuse("Content-Type"));
                         else
                             body = http_body();
                         curr = "";
@@ -69,7 +69,7 @@ http_client::http_client() {
             std::cerr << curr << std::endl;
 
             if (idx == std::string::npos) {
-                body.add(curr.size(), curr);
+                body.add(curr);
 
                 if (curr.size() == 0) {
                     return on_exit();
@@ -82,7 +82,7 @@ http_client::http_client() {
                 }
             } else {
                 std::string s2 = curr.substr(0, idx);
-                body.add(s2.size(), s2);
+                body.add(s2);
                 curr = "";
                 curr = curr.substr(idx, curr.size() - idx);
                 return on_exit();
@@ -94,24 +94,13 @@ http_client::http_client() {
 }
 
 void http_client::to_string(http_request r) {
-    request_len = 0;
     headers = http_headers();
-
-    std::string curr = r.get_title().get();
-    ::memcpy(request, curr.c_str(), curr.length());
-    request_len += curr.length();
-
-    curr = r.get_headers().get();
-    ::memcpy(request + request_len, curr.c_str(), curr.length());
-    request_len += curr.length();
-
-    ::memcpy(request + request_len, r.get_body().get().c_str(), r.get_body().size());
-    request_len += r.get_body().size();
+    request_len = r.get_to(request, 1000);
 }
 
 void http_client::send(char const *ip, int port, http::http_request r, std::function<void(http_response)> f) {
-    client = new async_socket; // TODO move to constructer
-    need_body = r.get_title().get_method().get() != "HEAD";
+    client = new async_socket; // TODO move to constructor
+    need_body = r.get_title().get_method().get_method_name() != HEAD;
     parse = OUT;
     to_string(r);
     client->set_connection(service, ip, port, on_accept);

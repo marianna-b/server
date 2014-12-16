@@ -6,19 +6,21 @@ using namespace http;
 http_response_title::http_response_title() :version(), status() {}
 
 http_response_title::http_response_title(std::string s) {
-    std::cerr << s << std::endl;
     unsigned long idx = s.find(' ');
     std::string curr = s.substr(0, idx);
+
     idx++;
     s = s.substr(idx, s.size() - idx);
     version = http_version(curr);
-    std::cerr << version.get_version() << std::endl;
+
     idx = s.find(' ');
-    idx++;
     curr = s.substr(0, idx);
     int code = std::stoi(curr);
-    s = s.substr(idx, s.size() - idx);
-    status = http_status(code, s);
+
+    idx++;
+    curr = s.substr(idx, s.size() - idx);
+    status = http_status(code, curr);
+
     std::cerr << status.get_code() << " " << status.get_reason() << std::endl;
 }
 

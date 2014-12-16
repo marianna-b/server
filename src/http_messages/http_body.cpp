@@ -12,14 +12,19 @@ size_t http_body::size() {
     return length;
 }
 
-http_body::http_body(size_t t, std::string d, std::string s)
+http_body::http_body(std::string d, std::string s)
 : type(s){
-    length = t;
+    length = d.size();
     buf = d;
 }
 
-void http_body::add(size_t t, std::string d) {
-    length += t;
+http_body::http_body(std::string d) {
+    length = d.size();
+    buf = d;
+}
+
+void http_body::add(std::string d) {
+    length += d.size();
     buf += d;
 }
 

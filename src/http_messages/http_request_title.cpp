@@ -10,12 +10,15 @@ http_request_title::http_request_title(std::string s) {
     unsigned long idx = s.find(' ');
     std::string curr = s.substr(0, idx);
     idx++;
+
     s = s.substr(idx, s.size() - idx);
     method_name = method(curr);
     idx = s.find(' ');
+
     curr = s.substr(0, idx);
     url = http_request_url(curr);
     idx++;
+
     s = s.substr(idx, s.size() - idx);
     version = http_version(s);
 }

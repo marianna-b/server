@@ -1,3 +1,4 @@
+#include <string.h>
 #include "http_request.h"
 
 using namespace http;
@@ -32,4 +33,26 @@ http_body http_request::get_body() {
 
 bool http_request::has_body() {
     return body.is_empty();
+}
+
+std::string http_request::get() {
+    return get_title().get() + get_headers().get() + get_body().get();
+}
+
+size_t http_request::get_to(void *request, size_t size) {
+    ::memset(request, 0, size);
+    size_t request_len = 0;
+
+    std::string curr = get_title().get();
+    ::memcpy(request, curr.c_str(), curr.length());
+    request_len += curr.length();
+
+    curr = get_headers().get();
+    ::memcpy(request + request_len, curr.c_str(), curr.length());
+    request_len += curr.length();
+
+    ::memcpy(request + request_len, get_body().get().c_str(), get_body().size());
+    request_len += get_body().size();
+
+    return request_len;
 }
