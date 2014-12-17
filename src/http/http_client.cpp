@@ -11,6 +11,7 @@ http_client::http_client(char const *ip, int port) {
 
     http_client::on_accept = [&](int error, async_socket *s) {
         if (handle_error(error)) return;
+        accepted = true;
         s->write(service, request, request_len, on_write);
         curr = "";
     };
@@ -24,20 +25,27 @@ http_client::http_client(char const *ip, int port) {
 
     http_client::on_read_some = [&](int error, async_socket *s, void *buf) {
         if (handle_error(error)) return;
-
+        bool flag = false;
         if (parse != IN_BODY) {
             curr += std::string((char *) buf);
             on_no_body_data();
         }
         if (parse == IN_BODY && need_body) {
-            on_body_data(std::string((char *) buf).size());
+            flag = on_body_data(std::string((char *) buf).size());
         }
-        s->read_some(service, 1000, on_read_some);
+        if (flag) return;
+
+        if (parse == IN_BODY && !need_body) {
+            on_exit(true);
+        }
+        if (parse == IN_BODY)
+            on_exit(false);
+        //s->read_some(service, 1000, on_read_some);
     };
 }
 
 
-void http_client::on_body_data(size_t t) {
+bool http_client::on_body_data(size_t t) {
     std::string cr_lf_client = "\r\n";
     char *cr_lf_p = (char *) cr_lf_client.c_str();
     unsigned long idx = curr.find(cr_lf_p);
@@ -46,14 +54,16 @@ void http_client::on_body_data(size_t t) {
         body.add(curr);
 
         if (t == 0) {
-            return on_exit();
+            on_exit(true);
+            return true;
         }
         if (headers.is_there("Content-Length")) {
-            int i = std::stoi(headers.get_valuse("Content-Length"), 0, 10);
+            int i = std::stoi(headers.get_value("Content-Length"), 0, 10);
             std::cerr << body.size() << std::endl;
             std::cerr << body.get() << std::endl;
             if (i == body.size()) {
-                return on_exit();
+                on_exit(true);
+                return true;
             }
         }
     } else {
@@ -61,9 +71,11 @@ void http_client::on_body_data(size_t t) {
         body.add(s2);
         curr = "";
         curr = curr.substr(idx, curr.size() - idx);
-        return on_exit();
+        on_exit(true);
+        return true;
     }
     curr = "";
+    return false;
 }
 
 
@@ -98,7 +110,7 @@ void http_client::on_no_body_data() {
                 curr = curr.substr(idx, curr.size() - idx);
                 std::cerr << curr << std::endl;
                 if (need_body)
-                    body = http_body(curr, headers.get_valuse("Content-Type"));
+                    body = http_body(curr, headers.get_value("Content-Type"));
                 else
                     body = http_body();
                 curr = "";
@@ -114,27 +126,30 @@ void http_client::to_string(http_request r) {
     request_len = r.get_to(request, 1000);
 }
 
-void http_client::send(http::http_request r, std::function<void(http_response)> f) {
+void http_client::send(http::http_request r, std::function<void(http_response, bool)> f) {
     need_body = r.get_title().get_method().get_method_name() != HEAD;
     parse = OUT;
     to_string(r);
     on_response = f;
+    if (accepted) {
+        client->write(service, request, request_len, on_write);
+        parse = IN_BODY;
+    }
     curr = "";
     service->run();
 }
 
 bool http_client::handle_error(int error) {
-    // TODO handle error
     return false;
 }
 
-void http_client::on_exit(){
+void http_client::on_exit(bool all) {
     http_response response(title, headers, body);
     headers = http_headers();
     curr = "";
     memset(request, 0, sizeof request);
-    service->stop();
-    on_response(response);
+    service->clean_stop();
+    on_response(response, all);
 }
 
 

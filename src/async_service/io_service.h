@@ -36,8 +36,9 @@ namespace tcp {
         void connect_waiter(async_socket*, const char*, int, std::function <void(int, async_socket*)>);
 
         bool clean;
-        epoll efd;
+        epoll* efd;
         volatile int stopper;
+        volatile int clean_stopper;
 
         std::map <int, io_events> data;
     };

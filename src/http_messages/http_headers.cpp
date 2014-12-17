@@ -3,9 +3,12 @@
 using namespace http;
 using namespace std;
 
-http_headers::http_headers() {}
+http_headers::http_headers() {
+    empty = true;
+}
 
 void http_headers::add_header(string name, string string) {
+    empty = false;
     header_map[name] = string;
     header_list.push_back(name);
 }
@@ -19,10 +22,14 @@ void http_headers::remove_header(string name) {
             break;
         }
     }
+
+    empty = header_map.size() == 0;
 }
 
 string http_headers::get() {
     string result = "";
+    if (empty)
+        return result;
     for (int i = 0; i < header_list.size(); ++i) {
         result += header_list[i] + ": " + header_map[header_list[i]] + "\r\n";
     }
@@ -34,7 +41,7 @@ bool http_headers::is_there(string string) {
     return header_map.count(string) > 0;
 }
 
-string http_headers::get_valuse(string string) {
+string http_headers::get_value(string string) {
     if (is_there(string))
         return header_map[string];
     else
@@ -42,6 +49,7 @@ string http_headers::get_valuse(string string) {
 }
 
 void http_headers::add_header(string string) {
+    empty = false;
     unsigned long idx = string.find(':');
     add_header(string.substr(0, idx), string.substr(idx + 2, string.size() - idx - 2));
 }
@@ -56,4 +64,8 @@ vector<pair<string, string> > http_headers::get_list() {
         v.push_back(make_pair(header_list[i], header_map[header_list[i]]));
     }
     return v;
+}
+
+void http_headers::set_not_empty() {
+    empty = false;
 }

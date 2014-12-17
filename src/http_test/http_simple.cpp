@@ -9,26 +9,38 @@ using namespace http;
 
 int main()
 {
-    function<http_response(http_request)> get = [&](http_request request) {
-        std::cerr << request.get_title().get() + request.get_headers().get() + request.get_body().get() << endl;
-        http_response_title title;
-        title.set_status(http_status(200, "OK"));
+    auto get = [&](http_request request, bool all) {
+        if (!all) {
+            std::cerr << request.get_title().get() + request.get_headers().get() + request.get_body().get() << endl;
+            http_response_title title;
+            title.set_status(http_status(200, "OK"));
 
-        http_headers headers;
-        std::string b = "Great!";
-        unsigned long b_s = b.size();
+            http_headers headers;
+            std::string b = "Great!";
 
-        headers.add_header("Content-Length", to_string(b_s));
-        headers.add_header("Content-Type", "text/*");
-        http_body body(b, "text/*");
+            headers.add_header("Content-Type", "text/*");
+            http_body body(b, "text/*");
 
-        return http_response(title, headers, body);
+            return http_response(title, headers, body);
+        } else {
+            std::cerr << request.get_title().get() + request.get_headers().get() + request.get_body().get() << endl;
+            http_response_title title;
+
+            http_headers headers;
+            std::string b = "\nOMNOMNOM!\r\n";
+            http_body body(b, "text/*");
+
+            return http_response(title, headers, body);
+        }
     };
 
     string ip = "127.0.0.1";
-    int port = 33335;
+    int port = 33334;
 
-    http_request_handler* h = new http_request_handler(get, get, [](int){});
+    http_request_handler* h = new http_request_handler();
+    h->set(GET, get, false);
+    h->set(HEAD, get, false);
+    h->set(PUT, get, true);
     http_server server(ip.c_str(), port, h);
     server.start();
     return 0;

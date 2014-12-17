@@ -1,5 +1,6 @@
 #include <string.h>
 #include <iostream>
+#include <error.h>
 #include "http_server.h"
 
 using namespace http;
@@ -7,13 +8,17 @@ using namespace tcp;
 
 http::http_server::http_server(char const *s, int i, http::http_request_handler* h)
         : handler(h) {
+
+    if (!h->is_implemented(GET) || !h->is_implemented(HEAD))
+        throw std::logic_error("HEAD or GET not implemented");
+
     service = new io_service;
     server = new async_server;
     server->bind(s, i);
     server->listen();
 
     http_server::on_connect = [&](int error, async_socket *asyncSocket) {
-        if (handle_error(error)) return handler->on_terminate(error);
+        if (handle_error(error)) return;
 
         std::cerr << asyncSocket->get_fd() << std::endl;
         connection_map[asyncSocket] = new http_connection(asyncSocket);
@@ -25,29 +30,41 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
         server->get_connection(service, on_connect);
 
     http_server::on_send = [&](int error, async_socket *asyncSocket) {
-        if (handle_error(error)) return handler->on_terminate(error);
-        delete connection_map[asyncSocket];
-        connection_map.erase(asyncSocket);
+        if (handle_error(error)) return;
+        if (connection_map[asyncSocket]->condition == OUT) {
+            delete asyncSocket;
+            connection_map.erase(asyncSocket);
+        }
+
+        asyncSocket->read_some(service, 1000, on_read_some);
     };
 
     http_server::on_read_some = [&](int error, async_socket *asyncSocket, void *buf) {
-        if (handle_error(error)) return handler->on_terminate(error);
+        if (handle_error(error)) return;
+        bool flag = false;
+
+        connection_map[asyncSocket]->request += std::string((char *) buf);
 
         if (connection_map[asyncSocket]->condition != IN_BODY) {
-            connection_map[asyncSocket]->request += std::string((char *) buf);
             on_no_body_data(asyncSocket);
         }
         if (connection_map[asyncSocket]->condition == IN_BODY && connection_map[asyncSocket]->need_body) {
-            on_body_data(asyncSocket, std::string((char *) buf).size());
+            flag = on_body_data(asyncSocket, std::string((char *) buf).size());
         }
+        if (flag) return;
 
         if (connection_map[asyncSocket]->condition == IN_BODY && !connection_map[asyncSocket]->need_body)
-            return on_request(asyncSocket);
-        asyncSocket->read_some(service, 1000, on_read_some);
+            return on_request(asyncSocket, true);
+
+        if (connection_map[asyncSocket]->condition == IN_BODY
+                && handler->is_on_some(connection_map[asyncSocket]->title.get_method().get_method_name()))
+            on_request(asyncSocket, false);
+        else
+            asyncSocket->read_some(service, 1000, on_read_some);
     };
 }
 
-void http_server::on_body_data(async_socket* asyncSocket, size_t t) {
+bool http_server::on_body_data(async_socket* asyncSocket, size_t t) {
 
     http_connection* curr = connection_map[asyncSocket];
     std::string cr_lf_server = "\r\n";
@@ -57,20 +74,21 @@ void http_server::on_body_data(async_socket* asyncSocket, size_t t) {
 
     if (idx == std::string::npos) {
         curr->body.add(curr->request);
-
-        if (t == 0) {
-            return on_request(asyncSocket);
-        }
+        curr->request = "";
         if (curr->headers.is_there("Content-Length")) {
-            int i = std::stoi(curr->headers.get_valuse("Content-Length"), 0, 10);
+            int i = std::stoi(curr->headers.get_value("Content-Length"), 0, 10);
             if (i == curr->body.size()) {
-                return on_request(asyncSocket);
+                on_request(asyncSocket, true);
+                return true;
             }
         }
     } else {
         curr->body.add(curr->request);
-        return on_request(asyncSocket);
+        curr->request = "";
+        on_request(asyncSocket, true);
+        return true;
     }
+    return false;
 }
 
 void http_server::on_no_body_data(async_socket* asyncSocket) {
@@ -102,7 +120,7 @@ void http_server::on_no_body_data(async_socket* asyncSocket) {
                 curr->request = curr->request.substr(idx, curr->request.size() - idx);
                 curr->condition = IN_BODY;
                 if (curr->need_body)
-                    curr->body = http_body(curr->request, curr->headers.get_valuse("Content-Type"));
+                    curr->body = http_body(curr->request, curr->headers.get_value("Content-Type"));
                 else
                     curr->body = http_body();
                 curr->request = "";
@@ -121,18 +139,19 @@ void http::http_server::stop() {
 }
 
 bool http_server::handle_error(int error) {
-    //TODO error handling
-    return false;
+    return handler->run_error_handler(error);
 }
 
-void http_server::on_request(tcp::async_socket* s) {
+void http_server::on_request(tcp::async_socket* s, bool all) {
 
     auto connection = connection_map[s];
     auto request = http_request(connection->title, connection->headers, connection->body);
-    auto response = handler->get(connection->title.get_method().get_method_name())(request);
+    auto response = handler->get(connection->title.get_method().get_method_name())(request, all);
 
     connection->to_string(response);
     connection->client->write(service, connection->response, connection->resp_len, on_send);
+    if (all)
+        connection->condition = OUT;
 }
 
 http_server::~http_server() {

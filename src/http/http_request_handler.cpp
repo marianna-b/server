@@ -2,14 +2,7 @@
 using namespace http;
 using namespace std;
 
-http::http_request_handler::http_request_handler(function < http_response(http_request) > get,
-        function < http_response(http_request) > head, function<void(int)> t) {
-    handler_map[GET] = get;
-    handler_map[HEAD] = head;
-    on_term = t;
-}
-
-std::function<http::http_response(http::http_request)> http_request_handler::get(method_name name) {
+std::function<http::http_response(http::http_request, bool)> http_request_handler::get(method_name name) {
     return handler_map[name];
 }
 
@@ -18,10 +11,21 @@ bool http_request_handler::is_implemented(method_name name) {
 }
 
 
-void http_request_handler::set(method_name name, function<http_response(http_request)> f) {
+void http_request_handler::set(method_name name, function<http_response(http_request, bool)> f, bool some) {
     handler_map[name] = f;
+    on_some[name] = some;
 }
 
-void http_request_handler::on_terminate(int i) {
-    on_term(i);
+http_request_handler::http_request_handler() {}
+
+void http_request_handler::set_error_handler(function<bool(int)> f) {
+    error_handler = f;
+}
+
+bool http_request_handler::run_error_handler(int i) {
+    return error_handler(i);
+}
+
+bool http_request_handler::is_on_some(method_name name) {
+    return on_some[name];
 }

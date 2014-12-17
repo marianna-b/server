@@ -11,9 +11,11 @@ using namespace std;
 void reader_del_epoll(epoll*, int, io_events*);
 void writer_del_epoll(epoll*, int, io_events*);
 
-tcp::io_service::io_service() :efd() {
+tcp::io_service::io_service() {
+    efd = new epoll();
     clean = false;
     stopper = ::eventfd(10, EFD_NONBLOCK);
+    clean_stopper = ::eventfd(10, EFD_NONBLOCK);
     if (stopper < 0)
         throw runtime_error(strerror(errno));
 }
@@ -21,82 +23,98 @@ tcp::io_service::io_service() :efd() {
 void tcp::io_service::run() {
     bool running = true;
     while (running) {
-        int n = efd.wait();
+        int n = efd->wait();
         if (n < 0) throw runtime_error(strerror(errno));
         if (n == 0) continue;
 
         for (int i = 0; i < n; ++i) {
-            int curr = efd.events[i].data.fd;
+            int curr = efd->events[i].data.fd;
 
             if (curr == stopper) {
                 cerr << "Trying to stop service!\n";
                 cerr << "Success!\n";
                 char c[1000];
-                if (::read(stopper, c, sizeof(uint64_t)) < 0)
+                if (::read(stopper, c, 8) < 0)
+                    throw runtime_error(strerror(errno));
+                ::close(stopper);
+                stopper = ::eventfd(10, EFD_NONBLOCK);
+                running = false;
+                break;
+            }
+
+            if (curr == clean_stopper) {
+                cerr << "Trying to stop service clean!\n";
+                cerr << "Success!\n";
+                char c[1000];
+                ::memset(c, 0, 1000);
+                if (::read(clean_stopper, c, 8) < 0)
                     throw runtime_error(strerror(errno));
 
-                uint64_t f = *((uint64_t*) c);
-                if (f == 2)
-                    clean = true;
+                ::close(clean_stopper);
+                clean_stopper = ::eventfd(10, EFD_NONBLOCK);
+                clean = true;
                 running = false;
                 break;
             }
 
             io_events *ev = &data[curr];
 
-            if (efd.events[i].events & EPOLL_WRITE) {
+            if (efd->events[i].events & EPOLL_WRITE) {
                 if (ev->want_connect() && ev->run_connect()) {
                     cerr << "Call of callback!\n";
-                    writer_del_epoll(&efd, curr, ev);
+                    writer_del_epoll(efd, curr, ev);
                     ev->connect_call_back();
                 }
 
                 if (ev->want_write() && ev->run_write()) {
                     cerr << "Call of callback!\n";
-                    writer_del_epoll(&efd, curr, ev);
+                    writer_del_epoll(efd, curr, ev);
                     ev->write_call_back();
                 }
             }
 
-            if (efd.events[i].events & EPOLL_READ) {
+            if (efd->events[i].events & EPOLL_READ) {
                 if (ev->want_accept() && ev->run_accept()) {
                     cerr << "Call of callback!\n";
-                    reader_del_epoll(&efd, curr, ev);
+                    reader_del_epoll(efd, curr, ev);
                     ev->accept_call_back();
                 }
 
                 if (ev->want_read() && ev->run_read()) {
                     cerr << "Call of callback!\n";
-                    reader_del_epoll(&efd, curr, ev);
+                    reader_del_epoll(efd, curr, ev);
                     ev->read_call_back();
                 }
             }
         }
     }
     if (clean) {
-        efd = epoll();
+        delete efd;
+        efd = new epoll();
         clean = false;
-        data.empty();
+        data.clear();
     }
 }
 
 void tcp::io_service::stop() {
     cerr << "SERVICE STOP REQUEST SENT!\n";
-    efd.add(stopper, EPOLL_READ);
-    uint64_t a = 1;
-    if (::write(stopper, &a, sizeof(uint64_t)) < 0)
+    efd->add(stopper, EPOLL_READ);
+    uint32_t a = 1;
+    if (::write(stopper, &a, 8) < 0)
         throw runtime_error(strerror(errno));
 }
 
 void io_service::clean_stop() {
     cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
-    uint64_t a = 2;
-    efd.add(stopper, EPOLL_READ);
-    if (::write(stopper, &a, sizeof(uint64_t)) < 0)
+    uint32_t a = 2;
+    efd->add(clean_stopper, EPOLL_READ);
+    cerr << sizeof(&a) << endl;
+    if (::write(clean_stopper, &a, 8) < 0)
         throw runtime_error(strerror(errno));
 }
 
 tcp::io_service::~io_service() {
+    delete efd;
     if(::close(stopper) < 0)
         throw runtime_error(strerror(errno));
 }
@@ -159,7 +177,7 @@ void io_service::read_waiter(async_socket* s, size_t size, function<void(int, as
     if (data.count(fd) == 0)
         data[fd] = io_events(s);
 
-    reader_add_epoll(&efd, fd, &data[fd]);
+    reader_add_epoll(efd, fd, &data[fd]);
     data[fd].add_read(read_buffer(true, size, f));
 }
 
@@ -169,7 +187,7 @@ void io_service::read_some_waiter(async_socket* s, size_t size, function<void(in
     if (data.count(fd) == 0)
         data[fd] = io_events(s);
 
-    reader_add_epoll(&efd, fd, &data[fd]);
+    reader_add_epoll(efd, fd, &data[fd]);
     data[fd].add_read(read_buffer(false, size, f));
 }
 
@@ -179,7 +197,7 @@ void io_service::write_waiter(async_socket* s, void * mesg, size_t size, functio
     if (data.count(fd) == 0)
         data[fd] = io_events(s);
 
-    writer_add_epoll(&efd, fd, &data[fd]);
+    writer_add_epoll(efd, fd, &data[fd]);
     data[fd].add_write(write_buffer(mesg, size, f));
 }
 
@@ -189,7 +207,7 @@ void io_service::accept_waiter(async_server* s, function<void(int, async_socket*
     if (data.count(fd) == 0)
         data[fd] = io_events(fd);
 
-    reader_add_epoll(&efd, fd, &data[fd]);
+    reader_add_epoll(efd, fd, &data[fd]);
     data[fd].add_accept(accept_buffer(f));
 }
 
@@ -199,7 +217,7 @@ void io_service::connect_waiter(async_socket* s, const char* ip, int port, funct
     if (data.count(fd) == 0)
         data[fd] = io_events(s);
 
-    writer_add_epoll(&efd, fd, &data[fd]);
+    writer_add_epoll(efd, fd, &data[fd]);
     data[fd].add_connect(connect_buffer(ip, port, f));
 }
 

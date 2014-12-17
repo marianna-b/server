@@ -3,9 +3,12 @@
 using namespace http;
 
 
-http_response_title::http_response_title() :version(), status() {}
+http_response_title::http_response_title() :version(), status() {
+    empty = true;
+}
 
 http_response_title::http_response_title(std::string s) {
+    empty = false;
     unsigned long idx = s.find(' ');
     std::string curr = s.substr(0, idx);
 
@@ -27,10 +30,12 @@ http_response_title::http_response_title(std::string s) {
 
 void http_response_title::set_status(http_status s) {
     status = s;
+    empty = false;
 }
 
 void http_response_title::set_version(http_version v) {
     version = v;
+    empty = false;
 }
 
 http_status http_response_title::get_status() {
@@ -42,5 +47,7 @@ http_version http_response_title::get_version() {
 }
 
 std::string http_response_title::get() {
+    if (empty)
+        return "";
     return version.get_version() + " " + std::to_string(status.get_code()) + " " + status.get_reason() + "\r\n";
 }

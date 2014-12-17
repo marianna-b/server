@@ -20,18 +20,18 @@ namespace http {
         ~http_server();
 
     private:
-        std::map<tcp::async_socket*, http_connection*> connection_map; // deleting async_socket in http_connection destructor
+        std::map<tcp::async_socket*, http_connection*> connection_map;
 
         tcp::io_service* service;
         tcp::async_server* server;
         http_request_handler* handler;
 
         void on_no_body_data(tcp::async_socket*);
-        void on_body_data(tcp::async_socket*, size_t);
+        bool on_body_data(tcp::async_socket*, size_t);
         bool handle_error(int);
         std::function<void(int, tcp::async_socket*)> on_connect;
         std::function<void(int, tcp::async_socket*, void*)> on_read_some;
-        void on_request(tcp::async_socket*);
+        void on_request(tcp::async_socket*, bool);
         std::function<void(int, tcp::async_socket*)> on_send;
     };
 }

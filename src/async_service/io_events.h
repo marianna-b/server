@@ -78,7 +78,7 @@ namespace tcp {
     private:
         int fd;
         async_socket* sock;
-        int error;
+        int error = 0;
         std::deque <read_buffer> readers;
         std::deque <write_buffer> writers;
         std::deque <connect_buffer> connectors;

@@ -37,7 +37,7 @@ void async_socket::write(io_service *service, void *msg, size_t t, function<void
 
 async_socket::~async_socket() {
     std::set<io_service*>::iterator it = services.begin();
-    for (it; it != services.end(); ++it) {
+    for (; it != services.end(); ++it) {
         io_service* service = *it;
         service->data.erase(fd);
     }

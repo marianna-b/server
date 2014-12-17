@@ -24,6 +24,7 @@ namespace http {
     private:
         http_version version;
         http_status status;
+        bool empty;
     };
 }
 

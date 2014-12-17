@@ -27,6 +27,7 @@ namespace http {
         method method_name;
         http_request_url url;
         http_version version;
+        bool empty;
     };
 }
 #endif //HTTP_REQUEST_TITLE
