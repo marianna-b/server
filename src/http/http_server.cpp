@@ -143,10 +143,13 @@ bool http_server::handle_error(int error) {
 
 void http_server::on_request(tcp::async_socket* s, bool all) {
 
-    auto connection = connection_map[s];
-    auto request = http_request(connection->title, connection->headers, connection->body);
-    auto response = handler->get(connection->title.get_method().get_method_name())(request, all);
-
+    http_connection* connection = connection_map[s];
+    http_request request = http_request(connection->title, connection->headers, connection->body);
+    http_response response = handler->get(connection->title.get_method().get_method_name())(request, all);
+    if (response.get().size() == 0) {
+        s->read_some(service, 1000, on_read_some);
+        return;
+    }
     connection->to_string(response);
     connection->client->write(service, connection->response, connection->resp_len, on_send);
     if (all)
