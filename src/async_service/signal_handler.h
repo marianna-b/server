@@ -1,0 +1,21 @@
+#ifndef SIGNAL_HANDLER
+#define SIGNAL_HANDLER
+
+namespace tcp {
+   const int MAX_SERVICES = 100;
+
+   struct signal_handler {
+
+      static void add(struct io_service*);
+      static void set();
+      static void run_handler(int);
+
+   private:
+      volatile static int size;
+
+      volatile static struct io_service* services[MAX_SERVICES];
+   };
+
+}
+
+#endif // SIGNAL_HANDLER

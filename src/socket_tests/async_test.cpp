@@ -8,13 +8,6 @@ using namespace tcp;
 
 int main()
 {
-    std::string crlf = "\r\n";
-    std::string curr= "\r\newhrlkwqejhrlkwqjehrlkwjehrjfda;kjfd;walefja;wfjw;fjw;oefj;wlefkfj;wljfe;lew";
-    int idx = (int) curr.find(crlf.c_str());
-    cerr << idx << endl;
-    cerr << curr.substr(idx + 2, curr.size() - idx - 2) << endl;
-
-
     string ip = "127.0.0.1";
     int port = 33224;
     char m1[256] = "This is message #1";

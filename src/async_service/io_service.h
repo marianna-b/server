@@ -19,7 +19,7 @@ namespace tcp {
 
         void run();
         void stop();
-        void clean_stop();
+        void pause();
 
 
         ~io_service();
@@ -28,6 +28,7 @@ namespace tcp {
         friend class async_server;
         friend class async_socket;
         friend class io_events;
+        friend class signal_handler;
 
         void read_waiter(async_socket*, size_t, std::function <void(int, async_socket*, void*)>);
         void read_some_waiter(async_socket*, size_t, std::function <void(int, async_socket*, void*)>);
@@ -37,8 +38,8 @@ namespace tcp {
 
         bool clean;
         epoll* efd;
-        volatile int stopper;
-        volatile int clean_stopper;
+        int stopper;
+        volatile int pause_fd;
 
         std::map <int, io_events> data;
     };

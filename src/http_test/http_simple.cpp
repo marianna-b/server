@@ -2,6 +2,7 @@
 #include <async_service/io_service.h>
 #include <http/http_request_handler.h>
 #include <http/http_server.h>
+#include <async_service/signal_handler.h>
 
 using namespace std;
 using namespace tcp;
@@ -42,6 +43,7 @@ int main()
     h->set(HEAD, get, false);
     h->set(PUT, get, true);
     http_server server(ip.c_str(), port, h);
+    signal_handler::set();
     server.start();
     return 0;
 }

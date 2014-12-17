@@ -15,6 +15,8 @@ set(SOURCES
                     src/async_service/io_service.cpp
                     src/async_service/io_events.h
                     src/async_service/io_events.cpp
+                    src/async_service/signal_handler.h
+                    src/async_service/signal_handler.cpp
                     src/http/http_client.h
                     src/http/http_client.cpp
                     src/http/http_connection.h

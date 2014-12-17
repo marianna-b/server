@@ -20,7 +20,6 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
     http_server::on_connect = [&](int error, async_socket *asyncSocket) {
         if (handle_error(error)) return;
 
-        std::cerr << asyncSocket->get_fd() << std::endl;
         connection_map[asyncSocket] = new http_connection(asyncSocket);
         asyncSocket->read_some(service, 1000, on_read_some);
         server->get_connection(service, on_connect);

@@ -59,8 +59,6 @@ bool http_client::on_body_data(size_t t) {
         }
         if (headers.is_there("Content-Length")) {
             int i = std::stoi(headers.get_value("Content-Length"), 0, 10);
-            std::cerr << body.size() << std::endl;
-            std::cerr << body.get() << std::endl;
             if (i == body.size()) {
                 on_exit(true);
                 return true;
@@ -105,10 +103,8 @@ void http_client::on_no_body_data() {
                 curr = curr.substr(idx, curr.size() - idx);
             } else {
                 parse = IN_BODY;
-                std::cerr << curr << std::endl;
                 idx += 2;
                 curr = curr.substr(idx, curr.size() - idx);
-                std::cerr << curr << std::endl;
                 if (need_body)
                     body = http_body(curr, headers.get_value("Content-Type"));
                 else
@@ -148,7 +144,7 @@ void http_client::on_exit(bool all) {
     headers = http_headers();
     curr = "";
     memset(request, 0, sizeof request);
-    service->clean_stop();
+    service->pause();
     on_response(response, all);
 }
 

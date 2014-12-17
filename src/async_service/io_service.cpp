@@ -1,4 +1,5 @@
 #include "io_service.h"
+#include "signal_handler.h"
 #include <sys/eventfd.h>
 #include <iostream>
 #include <string>
@@ -12,10 +13,11 @@ void reader_del_epoll(epoll*, int, io_events*);
 void writer_del_epoll(epoll*, int, io_events*);
 
 tcp::io_service::io_service() {
+    signal_handler::add(this);
     efd = new epoll();
     clean = false;
     stopper = ::eventfd(10, EFD_NONBLOCK);
-    clean_stopper = ::eventfd(10, EFD_NONBLOCK);
+    pause_fd = ::eventfd(10, EFD_NONBLOCK);
     if (stopper < 0)
         throw runtime_error(strerror(errno));
 }
@@ -37,21 +39,20 @@ void tcp::io_service::run() {
                 if (::read(stopper, c, 8) < 0)
                     throw runtime_error(strerror(errno));
                 ::close(stopper);
-                stopper = ::eventfd(10, EFD_NONBLOCK);
                 running = false;
                 break;
             }
 
-            if (curr == clean_stopper) {
+            if (curr == pause_fd) {
                 cerr << "Trying to stop service clean!\n";
                 cerr << "Success!\n";
                 char c[1000];
                 ::memset(c, 0, 1000);
-                if (::read(clean_stopper, c, 8) < 0)
+                if (::read(pause_fd, c, 8) < 0)
                     throw runtime_error(strerror(errno));
 
-                ::close(clean_stopper);
-                clean_stopper = ::eventfd(10, EFD_NONBLOCK);
+                ::close(pause_fd);
+                pause_fd = ::eventfd(10, EFD_NONBLOCK);
                 clean = true;
                 running = false;
                 break;
@@ -104,12 +105,11 @@ void tcp::io_service::stop() {
         throw runtime_error(strerror(errno));
 }
 
-void io_service::clean_stop() {
+void io_service::pause() {
     cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
     uint32_t a = 2;
-    efd->add(clean_stopper, EPOLL_READ);
-    cerr << sizeof(&a) << endl;
-    if (::write(clean_stopper, &a, 8) < 0)
+    efd->add(pause_fd, EPOLL_READ);
+    if (::write(pause_fd, &a, 8) < 0)
         throw runtime_error(strerror(errno));
 }
 
