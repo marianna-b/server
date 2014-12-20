@@ -30,7 +30,7 @@ namespace http {
         bool on_body_data(tcp::async_socket*, size_t);
         bool handle_error(int);
         std::function<void(int, tcp::async_socket*)> on_connect;
-        std::function<void(int, tcp::async_socket*, void*)> on_read_some;
+        std::function<void(int, tcp::async_socket*, size_t, void*)> on_read_some;
         void on_request(tcp::async_socket*, bool);
         std::function<void(int, tcp::async_socket*)> on_send;
     };

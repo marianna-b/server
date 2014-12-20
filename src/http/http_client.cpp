@@ -23,15 +23,15 @@ http_client::http_client(char const *ip, int port) {
         s->read_some(service, 1000, on_read_some);
     };
 
-    http_client::on_read_some = [&](int error, async_socket *s, void *buf) {
+    http_client::on_read_some = [&](int error, async_socket *s, size_t size, void *buf) {
         if (handle_error(error)) return;
         bool flag = false;
+        curr += std::string((char *) buf, (char *) buf + size);
         if (parse != IN_BODY) {
-            curr += std::string((char *) buf);
             on_no_body_data();
         }
         if (parse == IN_BODY && need_body) {
-            flag = on_body_data(std::string((char *) buf).size());
+            flag = on_body_data(size);
         }
         if (flag) return;
 
@@ -68,7 +68,6 @@ bool http_client::on_body_data(size_t t) {
         std::string s2 = curr.substr(0, idx);
         body.add(s2);
         curr = "";
-        curr = curr.substr(idx, curr.size() - idx);
         on_exit(true);
         return true;
     }

@@ -7,7 +7,7 @@
 using namespace tcp;
 using namespace std;
 
-tcp::read_buffer::read_buffer(bool all, size_t t, function<void(int, async_socket*, void *)> function) {
+read_buffer::read_buffer(bool all, size_t t, function<void(int, async_socket*, size_t, void *)> function) {
     read_all = all;
     needed = t;
     done = 0;
@@ -120,7 +120,7 @@ bool io_events::run_connect() {
 
 bool io_events::run_read() {
     cerr << "Trying to read! " << fd << "\n";
-    read_buffer now = readers.front();
+    read_buffer& now = readers.front();
     char buffer[1000];
     size_t idx = now.done;
     size_t idx2 = now.needed;
@@ -138,8 +138,6 @@ bool io_events::run_read() {
         cerr << "We've read " << r << "!\n";
         now.done += r;
 
-        readers.pop_front();
-        readers.push_front(now);
         if (now.done == now.needed) {
             return true;
         }
@@ -200,7 +198,7 @@ void io_events::read_call_back() {
     read_buffer now = readers.front();
 
     readers.pop_front();
-    now.call(error, sock, (void*)now.buf);
+    now.call(error, sock, now.done, (void*)now.buf);
 }
 
 io_events::io_events() {

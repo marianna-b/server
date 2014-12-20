@@ -31,7 +31,7 @@ namespace http {
 
         std::function<void(int, tcp::async_socket*)> on_accept;
         std::function<void(int, tcp::async_socket*)> on_write;
-        std::function<void(int, tcp::async_socket*, void*)> on_read_some;
+        std::function<void(int, tcp::async_socket*, size_t, void*)> on_read_some;
         std::function<void(http_response, bool)> on_response;
 
         parse_condition parse;

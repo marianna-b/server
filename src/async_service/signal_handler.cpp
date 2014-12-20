@@ -21,7 +21,7 @@ void tcp::signal_handler::run_handler(int i) {
         uint32_t a = 1;
         ::write(services[i]->stopper, &a, 8);
     }
-    exit(i);
+    exit(0);
 }
 
 void tcp::signal_handler::set() {

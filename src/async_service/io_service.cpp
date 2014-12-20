@@ -38,7 +38,6 @@ void tcp::io_service::run() {
                 char c[1000];
                 if (::read(stopper, c, 8) < 0)
                     throw runtime_error(strerror(errno));
-                ::close(stopper);
                 running = false;
                 break;
             }
@@ -51,8 +50,9 @@ void tcp::io_service::run() {
                 if (::read(pause_fd, c, 8) < 0)
                     throw runtime_error(strerror(errno));
 
-                ::close(pause_fd);
+                efd->remove(pause_fd);
                 pause_fd = ::eventfd(10, EFD_NONBLOCK);
+                efd->add(pause_fd, EPOLL_READ);
                 clean = true;
                 running = false;
                 break;
@@ -99,8 +99,8 @@ void tcp::io_service::run() {
 
 void tcp::io_service::stop() {
     cerr << "SERVICE STOP REQUEST SENT!\n";
-    efd->add(stopper, EPOLL_READ);
     uint32_t a = 1;
+    efd->add(stopper, EPOLL_READ);
     if (::write(stopper, &a, 8) < 0)
         throw runtime_error(strerror(errno));
 }
@@ -115,6 +115,8 @@ void io_service::pause() {
 
 tcp::io_service::~io_service() {
     delete efd;
+    if(::close(stopper) < 0)
+        throw runtime_error(strerror(errno));
     if(::close(stopper) < 0)
         throw runtime_error(strerror(errno));
 }
@@ -171,7 +173,7 @@ void writer_add_epoll(epoll* efd, int fd, io_events* ev) {
     }
 }
 
-void io_service::read_waiter(async_socket* s, size_t size, function<void(int, async_socket*, void*)> f) {
+void io_service::read_waiter(async_socket* s, size_t size, function<void(int, async_socket*, size_t, void*)> f) {
     int fd = s->get_fd();
 
     if (data.count(fd) == 0)
@@ -181,7 +183,7 @@ void io_service::read_waiter(async_socket* s, size_t size, function<void(int, as
     data[fd].add_read(read_buffer(true, size, f));
 }
 
-void io_service::read_some_waiter(async_socket* s, size_t size, function<void(int, async_socket*, void*)> f) {
+void io_service::read_some_waiter(async_socket* s, size_t size, function<void(int, async_socket*, size_t, void*)> f) {
     int fd = s->get_fd();
 
     if (data.count(fd) == 0)

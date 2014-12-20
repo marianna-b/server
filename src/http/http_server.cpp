@@ -38,17 +38,17 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
         asyncSocket->read_some(service, 1000, on_read_some);
     };
 
-    http_server::on_read_some = [&](int error, async_socket *asyncSocket, void *buf) {
+    http_server::on_read_some = [&](int error, async_socket *asyncSocket, size_t size, void const *buf) {
         if (handle_error(error)) return;
         bool flag = false;
 
-        connection_map[asyncSocket]->request += std::string((char *) buf);
+        connection_map[asyncSocket]->request += std::string((char const *) buf, (char const *) buf + size);
 
         if (connection_map[asyncSocket]->condition != IN_BODY) {
             on_no_body_data(asyncSocket);
         }
         if (connection_map[asyncSocket]->condition == IN_BODY && connection_map[asyncSocket]->need_body) {
-            flag = on_body_data(asyncSocket, std::string((char *) buf).size());
+            flag = on_body_data(asyncSocket, size);
         }
         if (flag) return;
 
@@ -91,8 +91,7 @@ bool http_server::on_body_data(async_socket* asyncSocket, size_t t) {
 }
 
 void http_server::on_no_body_data(async_socket* asyncSocket) {
-    std::string cr_lf_server = "\r\n";
-    char *cr_lf_p = (char *) cr_lf_server.c_str();
+    char const *cr_lf_p = "\r\n";
     http_connection* curr = connection_map[asyncSocket];
     unsigned long idx = curr->request.find(cr_lf_p);
 

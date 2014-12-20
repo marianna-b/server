@@ -25,7 +25,7 @@ void async_socket::set_connection(io_service *service, char const *ip, int port,
     service->connect_waiter(this, ip, port, f);
 }
 
-void async_socket::read(io_service *service, size_t t, function<void(int, async_socket*, void*)> f) {
+void async_socket::read(io_service *service, size_t t, function<void(int, async_socket*, size_t, void*)> f) {
     services.insert(service);
     service->read_waiter(this, t, f);
 }
@@ -48,7 +48,7 @@ int async_socket::get_fd() {
     return fd;
 }
 
-void async_socket::read_some(io_service *service, size_t t, function<void(int, async_socket*, void*)> f) {
+void async_socket::read_some(io_service *service, size_t t, function<void(int, async_socket*, size_t, void*)> f) {
     services.insert(service);
     service->read_some_waiter(this, t, f);
 }

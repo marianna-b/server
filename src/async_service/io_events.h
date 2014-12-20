@@ -13,10 +13,10 @@ namespace tcp {
         size_t needed;
         size_t done;
         bool read_all;
-        std::function <void(int, async_socket*, void*)> call;
+        std::function <void(int, async_socket*, size_t, void*)> call;
         read_buffer() = default;
 
-        read_buffer(bool, size_t, std::function <void(int, async_socket*, void*)>);
+        read_buffer(bool, size_t, std::function <void(int, async_socket*, size_t, void*)>);
     };
 
     struct write_buffer {
