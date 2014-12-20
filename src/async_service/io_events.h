@@ -7,7 +7,7 @@
 #include <functional>
 #include <tcp/async_socket.h>
 
-const size_t MAX_BUFFER_SIZE = 5;
+const size_t MAX_BUFFER_SIZE = 10000;
 
 namespace tcp {
     struct read_buffer {

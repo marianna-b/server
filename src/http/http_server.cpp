@@ -178,7 +178,7 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
         for (int i = 0; i < connection->response.size(); ++i) {
             c[i] = connection->response[i];
         }
-        connection->client->write(service, c, MAX_BUFFER_SIZE, on_send);
+        connection->client->write(service, c, connection->response.size(), on_send);
     } else {
         char c[MAX_BUFFER_SIZE];
         ::memset(c, 0, MAX_BUFFER_SIZE);
@@ -186,8 +186,6 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
             c[i] = connection->response[i];
         }
         connection->sent += MAX_BUFFER_SIZE;
-
-
         connection->client->write(service, c, MAX_BUFFER_SIZE, on_write_some);
     }
 

@@ -16,7 +16,7 @@ namespace http {
 
     private:
         bool accepted = false;
-        char request[1000];
+        char request[MAX_BUFFER_SIZE];
         size_t request_len;
         void to_string(http_request);
         bool need_body = true;
