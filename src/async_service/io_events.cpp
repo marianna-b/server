@@ -11,12 +11,12 @@ read_buffer::read_buffer(bool all, size_t t, function<void(int, async_socket*, s
     read_all = all;
     needed = t;
     done = 0;
-    ::memset(buf, 0, 1000);
+    ::memset(buf, 0, MAX_BUFFER_SIZE);
     call = function;
 }
 
 write_buffer::write_buffer(void *pVoid, size_t t, function<void(int, async_socket*)> function) {
-    ::memset(buf, 0, 1000);
+    ::memset(buf, 0, MAX_BUFFER_SIZE);
     ::memcpy(buf, pVoid, t);
     needed = t;
     done = 0;
@@ -121,7 +121,7 @@ bool io_events::run_connect() {
 bool io_events::run_read() {
     cerr << "Trying to read! " << fd << "\n";
     read_buffer& now = readers.front();
-    char buffer[1000];
+    char buffer[MAX_BUFFER_SIZE];
     size_t idx = now.done;
     size_t idx2 = now.needed;
     ssize_t r = ::recv(fd, buffer, idx2 - idx, MSG_DONTWAIT);

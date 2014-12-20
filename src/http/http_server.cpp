@@ -1,6 +1,5 @@
 #include <string.h>
 #include <iostream>
-#include <error.h>
 #include "http_server.h"
 
 using namespace http;
@@ -21,7 +20,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
         if (handle_error(error)) return;
 
         connection_map[asyncSocket] = new http_connection(asyncSocket);
-        asyncSocket->read_some(service, 1000, on_read_some);
+        asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
         server->get_connection(service, on_connect);
     };
 
@@ -33,9 +32,9 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
         if (connection_map[asyncSocket]->condition == OUT) {
             delete asyncSocket;
             connection_map.erase(asyncSocket);
+        } else {
+            asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
         }
-
-        asyncSocket->read_some(service, 1000, on_read_some);
     };
 
     http_server::on_read_some = [&](int error, async_socket *asyncSocket, size_t size, void const *buf) {
@@ -59,7 +58,28 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
                 && handler->is_on_some(connection_map[asyncSocket]->title.get_method().get_method_name()))
             on_request(asyncSocket, false);
         else
-            asyncSocket->read_some(service, 1000, on_read_some);
+            asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
+    };
+
+    http_server::on_write_some = [&](int error, async_socket *s) {
+        std::cerr << connection_map.count(s) << std::endl;
+        http_connection* connection1 = connection_map[s];
+        char c1[MAX_BUFFER_SIZE];
+        ::memset(c1, 0, MAX_BUFFER_SIZE);
+
+        size_t idx1 = connection1->sent;
+        size_t idx2 = std::min(connection1->sent + MAX_BUFFER_SIZE, connection1->response.size());
+
+        for (int j = 0; j < idx2 - idx1; ++j)
+            c1[j] = connection1->response[idx1 + j];
+
+        connection1->sent += idx2 - idx1;
+
+        if (connection1->response.size() <= connection1->sent) {
+            connection1->client->write(service, c1, idx2 - idx1, on_send);
+        } else {
+            connection1->client->write(service, c1, MAX_BUFFER_SIZE, on_write_some);
+        }
     };
 }
 
@@ -146,11 +166,31 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
     http_request request = http_request(connection->title, connection->headers, connection->body);
     http_response response = handler->get(connection->title.get_method().get_method_name())(request, all);
     if (response.get().size() == 0) {
-        s->read_some(service, 1000, on_read_some);
+        s->read_some(service, MAX_BUFFER_SIZE, on_read_some);
         return;
     }
+    connection ->sent = 0;
     connection->to_string(response);
-    connection->client->write(service, connection->response, connection->resp_len, on_send);
+
+    if (connection->response.size() <= MAX_BUFFER_SIZE) {
+        char c[MAX_BUFFER_SIZE];
+        ::memset(c, 0, MAX_BUFFER_SIZE);
+        for (int i = 0; i < connection->response.size(); ++i) {
+            c[i] = connection->response[i];
+        }
+        connection->client->write(service, c, MAX_BUFFER_SIZE, on_send);
+    } else {
+        char c[MAX_BUFFER_SIZE];
+        ::memset(c, 0, MAX_BUFFER_SIZE);
+        for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
+            c[i] = connection->response[i];
+        }
+        connection->sent += MAX_BUFFER_SIZE;
+
+
+        connection->client->write(service, c, MAX_BUFFER_SIZE, on_write_some);
+    }
+
     if (all)
         connection->condition = OUT;
 }

@@ -12,7 +12,7 @@ namespace http {
         http_response(http_response_title, http_headers, http_body);
 
         std::string get();
-        size_t get_to(void*, size_t);
+        std::vector <char> get_to();
 
         void set_title(http_response_title);
         void set_headers(http_headers);

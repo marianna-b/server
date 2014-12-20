@@ -28,7 +28,7 @@ int main()
             http_response_title title;
 
             http_headers headers;
-            std::string b = "\nOMNOMNOM!\r\n";
+            std::string b = "\nOMNOMNOM!\nROMROMROMROMROM\r\n";
             http_body body(b, "text/*");
 
             return http_response(title, headers, body);
@@ -36,7 +36,7 @@ int main()
     };
 
     string ip = "127.0.0.1";
-    int port = 33334;
+    int port = 43337;
 
     http_request_handler* h = new http_request_handler();
     h->set(GET, get, false);

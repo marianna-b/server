@@ -20,7 +20,7 @@ http_client::http_client(char const *ip, int port) {
 
     http_client::on_write = [&](int error, async_socket *s) {
         if (handle_error(error)) return;
-        s->read_some(service, 1000, on_read_some);
+        s->read_some(service, MAX_BUFFER_SIZE, on_read_some);
     };
 
     http_client::on_read_some = [&](int error, async_socket *s, size_t size, void *buf) {
@@ -40,7 +40,7 @@ http_client::http_client(char const *ip, int port) {
         }
         if (parse == IN_BODY)
             on_exit(false);
-        //s->read_some(service, 1000, on_read_some);
+        //s->read_some(service, MAX_BUFFER_SIZE, on_read_some);
     };
 }
 
@@ -118,7 +118,7 @@ void http_client::on_no_body_data() {
 
 void http_client::to_string(http_request r) {
     headers = http_headers();
-    request_len = r.get_to(request, 1000);
+    request_len = r.get_to(request, MAX_BUFFER_SIZE);
 }
 
 void http_client::send(http::http_request r, std::function<void(http_response, bool)> f) {

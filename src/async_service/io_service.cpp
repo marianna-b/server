@@ -35,7 +35,7 @@ void tcp::io_service::run() {
             if (curr == stopper) {
                 cerr << "Trying to stop service!\n";
                 cerr << "Success!\n";
-                char c[1000];
+                char c[MAX_BUFFER_SIZE];
                 if (::read(stopper, c, 8) < 0)
                     throw runtime_error(strerror(errno));
                 running = false;
@@ -45,8 +45,8 @@ void tcp::io_service::run() {
             if (curr == pause_fd) {
                 cerr << "Trying to stop service clean!\n";
                 cerr << "Success!\n";
-                char c[1000];
-                ::memset(c, 0, 1000);
+                char c[MAX_BUFFER_SIZE];
+                ::memset(c, 0, MAX_BUFFER_SIZE);
                 if (::read(pause_fd, c, 8) < 0)
                     throw runtime_error(strerror(errno));
 

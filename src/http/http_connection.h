@@ -19,8 +19,8 @@ namespace http {
 
         parse_condition condition;
         tcp::async_socket *client;
-        char response[1000];
-        size_t resp_len = 0;
+        std::vector<char> response;
+        size_t sent = 0;
 
         std::string request;
         bool need_body;

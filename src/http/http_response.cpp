@@ -44,21 +44,20 @@ std::string http_response::get() {
     return get_title().get() + get_headers().get() + get_body().get();
 }
 
-size_t http_response::get_to(void *r, size_t t) {
-    char* response = (char*) r;
-    ::memset(response, 0, t);
-    size_t resp_len = 0;
+std::vector <char> http_response::get_to() {
+     std::vector <char> v;
 
     std::string curr = get_title().get();
-    ::memcpy(response, curr.c_str(), curr.length());
-    resp_len += curr.length();
+    for (int i = 0; i < curr.size(); ++i)
+        v.push_back(curr[i]);
 
     curr = get_headers().get();
-    ::memcpy(response + resp_len, curr.c_str(), curr.length());
-    resp_len += curr.length();
+    for (int i = 0; i < curr.size(); ++i)
+        v.push_back(curr[i]);
 
-    ::memcpy(response + resp_len, get_body().get().c_str(), get_body().size());
-    resp_len += get_body().size();
+    curr = get_body().get();
+    for (int i = 0; i < curr.size(); ++i)
+        v.push_back(curr[i]);
 
-    return resp_len;
+    return v;
 }

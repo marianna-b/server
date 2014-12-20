@@ -7,9 +7,11 @@
 #include <functional>
 #include <tcp/async_socket.h>
 
+const size_t MAX_BUFFER_SIZE = 5;
+
 namespace tcp {
     struct read_buffer {
-        char buf[1000];
+        char buf[MAX_BUFFER_SIZE];
         size_t needed;
         size_t done;
         bool read_all;
@@ -20,7 +22,7 @@ namespace tcp {
     };
 
     struct write_buffer {
-        char buf[1000];
+        char buf[MAX_BUFFER_SIZE];
         size_t needed;
         size_t done;
         std::function <void(int, async_socket*)> call;
