@@ -39,7 +39,7 @@ namespace tcp {
 
         bool clean;
         epoll* efd;
-        volatile int stopper;
+        int stopper;
         int pause_fd;
 
         std::map <int, io_events> data;

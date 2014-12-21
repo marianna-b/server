@@ -36,7 +36,7 @@ int main()
     };
 
     string ip = "127.0.0.1";
-    int port = 43337;
+    int port = 43336;
 
     http_request_handler* h = new http_request_handler();
     h->set(GET, get, false);

@@ -6,14 +6,14 @@ namespace tcp {
 
    struct signal_handler {
 
-      static void add(struct io_service*);
+      static void add(int);
       static void set();
       static void run_handler(int);
 
    private:
       volatile static int size;
 
-      volatile static struct io_service* services[MAX_SERVICES];
+      volatile static int services[MAX_SERVICES];
    };
 
 }

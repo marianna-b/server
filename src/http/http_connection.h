@@ -12,9 +12,7 @@
 namespace http {
     struct http_connection {
 
-        http_connection();
         http_connection(tcp::async_socket *);
-        ~http_connection();
         void to_string(http_response);
 
         parse_condition condition;
@@ -28,7 +26,6 @@ namespace http {
         http_headers headers;
         http_body body;
     private:
-        bool no_del = true;
     };
 
 }

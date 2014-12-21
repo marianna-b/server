@@ -188,7 +188,6 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
         connection->sent += MAX_BUFFER_SIZE;
         connection->client->write(service, c, MAX_BUFFER_SIZE, on_write_some);
     }
-
     if (all)
         connection->condition = OUT;
 }

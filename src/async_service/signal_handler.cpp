@@ -1,27 +1,24 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <iostream>
+#include <sys/eventfd.h>
 #include "signal_handler.h"
 #include "io_service.h"
 
 using namespace tcp;
 
 volatile int signal_handler::size = 0;
-volatile io_service* signal_handler::services[MAX_SERVICES];
+volatile int signal_handler::services[MAX_SERVICES];
 
-void tcp::signal_handler::add(io_service* i) {
+void tcp::signal_handler::add(int i) {
     services[size] = i;
     size++;
 }
 
 void tcp::signal_handler::run_handler(int i) {
-    std::cerr << "Signal caught " << i << " \n";
     for (int i = 0; i < size; ++i) {
-        services[i]->efd->add(services[i]->stopper, EPOLL_READ);
-        uint32_t a = 1;
-        ::write(services[i]->stopper, &a, 8);
+        eventfd_write(services[i], 1);
     }
-    exit(0);
 }
 
 void tcp::signal_handler::set() {
@@ -35,5 +32,4 @@ void tcp::signal_handler::set() {
     act.sa_mask = set;
     sigaction(SIGINT, &act, 0);
     sigaction(SIGTERM, &act, 0);
-
 }

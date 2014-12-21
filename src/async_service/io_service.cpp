@@ -2,7 +2,6 @@
 #include "signal_handler.h"
 #include <sys/eventfd.h>
 #include <iostream>
-#include <string>
 #include <string.h>
 #include <tcp/async_server.h>
 
@@ -13,11 +12,13 @@ void reader_del_epoll(epoll*, int, io_events*);
 void writer_del_epoll(epoll*, int, io_events*);
 
 tcp::io_service::io_service() {
-    signal_handler::add(this);
     efd = new epoll();
     clean = false;
-    stopper = ::eventfd(10, EFD_NONBLOCK);
-    pause_fd = ::eventfd(10, EFD_NONBLOCK);
+    stopper = ::eventfd(0, 0);
+    efd->add(stopper, EPOLL_EVENTFD);
+    signal_handler::add(stopper);
+    pause_fd = ::eventfd(0, 0);
+    efd->add(pause_fd, EPOLL_EVENTFD);
     if (stopper < 0)
         throw runtime_error(strerror(errno));
 }
@@ -26,7 +27,13 @@ void tcp::io_service::run() {
     bool running = true;
     while (running) {
         int n = efd->wait();
-        if (n < 0) throw runtime_error(strerror(errno));
+        if (n < 0) {
+            if (errno != EINTR) {
+                throw runtime_error(strerror(errno));
+            } else {
+                break;
+            }
+        }
         if (n == 0) continue;
 
         for (int i = 0; i < n; ++i) {
@@ -35,9 +42,6 @@ void tcp::io_service::run() {
             if (curr == stopper) {
                 cerr << "Trying to stop service!\n";
                 cerr << "Success!\n";
-                char c[MAX_BUFFER_SIZE];
-                if (::read(stopper, c, 8) < 0)
-                    throw runtime_error(strerror(errno));
                 running = false;
                 break;
             }
@@ -45,14 +49,6 @@ void tcp::io_service::run() {
             if (curr == pause_fd) {
                 cerr << "Trying to stop service clean!\n";
                 cerr << "Success!\n";
-                char c[MAX_BUFFER_SIZE];
-                ::memset(c, 0, MAX_BUFFER_SIZE);
-                if (::read(pause_fd, c, 8) < 0)
-                    throw runtime_error(strerror(errno));
-
-                efd->remove(pause_fd);
-                pause_fd = ::eventfd(10, EFD_NONBLOCK);
-                efd->add(pause_fd, EPOLL_READ);
                 clean = true;
                 running = false;
                 break;
@@ -99,17 +95,13 @@ void tcp::io_service::run() {
 
 void tcp::io_service::stop() {
     cerr << "SERVICE STOP REQUEST SENT!\n";
-    uint32_t a = 1;
-    efd->add(stopper, EPOLL_READ);
-    if (::write(stopper, &a, 8) < 0)
+    if (eventfd_write(stopper, 1) < 0)
         throw runtime_error(strerror(errno));
 }
 
 void io_service::pause() {
     cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
-    uint32_t a = 2;
-    efd->add(pause_fd, EPOLL_READ);
-    if (::write(pause_fd, &a, 8) < 0)
+    if (eventfd_write(pause_fd, 1) < 0)
         throw runtime_error(strerror(errno));
 }
 
@@ -117,7 +109,7 @@ tcp::io_service::~io_service() {
     delete efd;
     if(::close(stopper) < 0)
         throw runtime_error(strerror(errno));
-    if(::close(stopper) < 0)
+    if(::close(pause_fd) < 0)
         throw runtime_error(strerror(errno));
 }
 

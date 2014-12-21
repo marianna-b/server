@@ -10,6 +10,7 @@ namespace tcp {
         EPOLL_READ = EPOLLIN,
         EPOLL_WRITE = EPOLLOUT,
         EPOLL_BOTH = EPOLLOUT | EPOLLIN,
+        EPOLL_EVENTFD = EPOLLIN | EPOLLET
     };
 
     struct epoll {
@@ -28,7 +29,7 @@ namespace tcp {
         epoll_event events[1000];
     private:
         int fd;
-        int timeout = 10;
+        int timeout = 10000;
         static const int MAX_EVENTS = 1000;
     };
 
