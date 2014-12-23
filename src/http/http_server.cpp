@@ -171,7 +171,7 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
     }
     connection ->sent = 0;
     connection->to_string(response);
-
+    // TODO if method not implemented
     if (connection->response.size() <= MAX_BUFFER_SIZE) {
         char c[MAX_BUFFER_SIZE];
         ::memset(c, 0, MAX_BUFFER_SIZE);

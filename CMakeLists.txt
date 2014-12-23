@@ -47,10 +47,13 @@ set(SOURCES
                     src/http_messages/method_name.cpp
                     src/http_messages/mime_type.h
                     src/http_messages/mime_type.cpp
+                    src/messenger/messenger.h
+                    src/messenger/messenger.cpp
                     )
 
 #add_executable(async_test ${SOURCES} src/socket_tests/async_test.cpp)
 #add_executable(echo_client ${SOURCES} src/socket_tests/echo_client.cpp)
 #add_executable(echo_server ${SOURCES} src/socket_tests/echo_server.cpp)
-add_executable(http_simple ${SOURCES} src/http_test/http_simple.cpp)
+#add_executable(http_simple ${SOURCES} src/http_test/http_simple.cpp)
+add_executable(http_main ${SOURCES} src/messenger/http_main.cpp)
 #add_executable(http_simple2 ${SOURCES} src/http_test/http_simple2.cpp)
