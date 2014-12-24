@@ -12,28 +12,39 @@ messenger::messenger() {
         return error != 0;
     };
     messenger::get = [&](http_request r, bool) {
-        string path =  r.get_title().get_url().get_path();
-        string query = r.get_title().get_url().get_query();
+        try {
+            string path = r.get_title().get_url().get_path();
+            string query = r.get_title().get_url().get_query();
 
-        if (path == "/login.html") {
-            return login_response();
-        } else if (path == "/messenger.html") {
-            return messenger_response(query);
-        } else {
-            return not_found_response();
+            if (path == "/login.html") {
+                return login_response();
+            } else if (path == "/messenger.html") {
+                return messenger_response(query);
+            } else {
+                return not_found_response();
+            }
+        } catch (exception e) {
+            return internal_error();
         }
     };
     messenger::head = [&](http_request r, bool) {
-        http_response response = get(r, true);
-        response.set_body(http_body());
-        return response;
+        try {
+            http_response response = get(r, true);
+            response.set_body(http_body());
+            return response;
+        } catch (exception e) {
+            return internal_error();
+        }
     };
     messenger::post = [&](http_request r, bool) {
-        string body = r.get_body().get();
-        string query = r.get_title().get_url().get_query();
+        try {
+            string body = r.get_body().get();
+            string query = r.get_title().get_url().get_query();
 
-        return post_response(body, query);
-
+            return post_response(body, query);
+        } catch (exception e) {
+            return internal_error();
+        }
     };
     tcp::signal_handler::set();
     handler = new http_request_handler();
@@ -65,7 +76,7 @@ http_response messenger::login_response() {
 
     string b = "";
     string line;
-    ifstream login("/home/mariashka/work/server/src/messenger/login.html");
+    ifstream login(login_adr);
     if (login.is_open()) {
         while (getline(login, line))
             b = b + line + "\n";
@@ -120,11 +131,11 @@ string messenger::begin_messenger(string name, string lastname) {
     string b = "<!DOCTYPE html><html><body>\n";
     b = b + "<h2><u>" + "You are: " + name + " " + lastname + "</u></h2>";
     string line;
-    ifstream myfile("/home/mariashka/work/server/src/messenger/messenger.html");
-    if (myfile.is_open()) {
-        while (getline(myfile, line))
+    ifstream messenger(messenger1);
+    if (messenger.is_open()) {
+        while (getline(messenger, line))
             b = b + line + "\n";
-        myfile.close();
+        messenger.close();
     }
     return b;
 }
@@ -132,11 +143,11 @@ string messenger::begin_messenger(string name, string lastname) {
 string messenger::end_messenger() {
     string b = "";
     string line;
-    ifstream myfile2("messenger/messenger_ending.html");
-    if (myfile2.is_open()) {
-        while (getline(myfile2, line))
+    ifstream messenger_ending(messenger2);
+    if (messenger_ending.is_open()) {
+        while (getline(messenger_ending, line))
             b = b + line + "\n";
-        myfile2.close();
+        messenger_ending.close();
     }
     return b;
 }

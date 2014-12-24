@@ -39,8 +39,12 @@ private:
 
     std::vector<std::string> messages;
 
-    std::string ip = "127.0.0.1";
-    int port = 33333;
+    const std::string ip = "127.0.0.1";
+    const int port = 33333;
+
+    const std::string messenger1 = "/home/mariashka/work/server/src/messenger/messenger.html";
+    const std::string messenger2 = "/home/mariashka/work/server/src/messenger/messenger_ending.html";
+    const std::string login_adr = "/home/mariashka/work/server/src/messenger/login.html";
 
     std::function<http::http_response(http::http_request, bool)> get;
     std::function<http::http_response(http::http_request, bool)> head;

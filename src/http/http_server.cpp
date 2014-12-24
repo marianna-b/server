@@ -5,7 +5,7 @@
 using namespace http;
 using namespace tcp;
 
-http::http_server::http_server(char const *s, int i, http::http_request_handler* h)
+http::http_server::http_server(char const *ip, int port, http::http_request_handler* h)
         : handler(h) {
 
     if (!h->is_implemented(GET) || !h->is_implemented(HEAD))
@@ -13,7 +13,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
 
     service = new io_service;
     server = new async_server;
-    server->bind(s, i);
+    server->bind(ip, port);
     server->listen();
 
     http_server::on_connect = [&](int error, async_socket *asyncSocket) {
@@ -83,7 +83,7 @@ http::http_server::http_server(char const *s, int i, http::http_request_handler*
     };
 }
 
-bool http_server::on_body_data(async_socket* asyncSocket, size_t t) {
+bool http_server::on_body_data(async_socket* asyncSocket, size_t) {
 
     http_connection* curr = connection_map[asyncSocket];
     std::string cr_lf_server = "\r\n";
