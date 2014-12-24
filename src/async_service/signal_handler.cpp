@@ -16,8 +16,13 @@ void tcp::signal_handler::add(int i) {
 }
 
 void tcp::signal_handler::run_handler(int i) {
-    for (int i = 0; i < size; ++i) {
-        eventfd_write(services[i], 1);
+    std::cerr << "Signal caught! " << i << std::endl;
+
+    if (i == SIGPIPE)
+        return;
+
+    for (int j = 0; j < size; ++j) {
+        eventfd_write(services[j], 1);
     }
 }
 
@@ -29,7 +34,10 @@ void tcp::signal_handler::set() {
     sigemptyset(&set);
     sigaddset(&set, SIGINT);
     sigaddset(&set, SIGTERM);
+    sigaddset(&set, SIGPIPE);
     act.sa_mask = set;
     sigaction(SIGINT, &act, 0);
     sigaction(SIGTERM, &act, 0);
+    sigaction(SIGPIPE, &act, 0);
+
 }

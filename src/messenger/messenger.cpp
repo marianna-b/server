@@ -8,32 +8,20 @@ using namespace http;
 using namespace std;
 
 messenger::messenger() {
+    messenger::error_handler = [&](int error) {
+        return error != 0;
+    };
     messenger::get = [&](http_request r, bool) {
-        cerr << r.get_title().get() + r.get_headers().get() + r.get_body().get() << endl;
-        http_response response;
+        string path =  r.get_title().get_url().get_path();
+        string query = r.get_title().get_url().get_query();
 
-
-        if (r.get_title().get_url().get_path() == "/login.html")
-            response = get_login_page();
-        else if (r.get_title().get_url().get_path() == "/messenger.html") {
-            string name = r.get_title().get_url().get_query();
-            unsigned long idx = name.find('&');
-            if (idx == string::npos) {
-                //TODO handle invalid query
-            }
-
-            string lastname = name.substr(idx + 10, name.size() - idx - 10);
-            name = name.substr(5, idx - 5);
-            // TODO check is login
-
-
-            response = get_messenger_page(name, lastname);
+        if (path == "/login.html") {
+            return login_response();
+        } else if (path == "/messenger.html") {
+            return messenger_response(query);
         } else {
-            http_response response1;
-            return response1;
+            return not_found_response();
         }
-        cerr << response.get_title().get() + response.get_headers().get() + response.get_body().get() << endl;
-        return response;
     };
     messenger::head = [&](http_request r, bool) {
         http_response response = get(r, true);
@@ -41,32 +29,18 @@ messenger::messenger() {
         return response;
     };
     messenger::post = [&](http_request r, bool) {
-        cerr << r.get_title().get() + r.get_headers().get() + r.get_body().get() << endl;
-        string s = r.get_body().get();
+        string body = r.get_body().get();
+        string query = r.get_title().get_url().get_query();
 
-        string name = r.get_title().get_url().get_query();
-        unsigned long idx = name.find('&');
-        if (idx == string::npos) {
-            //TODO handle invalid query
-        }
+        return post_response(body, query);
 
-        string lastname = name.substr(idx + 10, name.size() - idx - 10);
-        name = name.substr(5, idx - 5);
-        // TODO check is login
-        messages.push_back(parse_post(s, name, lastname));
-
-        http_response response = get_messenger_page(name, lastname);
-        cerr << response.get_title().get() + response.get_headers().get() + response.get_body().get() << endl;
-        return response;
-    };
-    messenger::error_handler = [&](int error) {
-        return false; // TODO error handling
     };
     tcp::signal_handler::set();
     handler = new http_request_handler();
     handler->set(GET, get, false);
     handler->set(HEAD, head, false);
     handler->set(POST, post, false);
+    handler->set_error_handler(error_handler);
     server = new http_server(ip.c_str(), port, handler);
 };
 
@@ -83,24 +57,22 @@ void messenger::stop() {
     server->stop();
 }
 
-http_response messenger::get_login_page() {
+http_response messenger::login_response() {
     http_response_title title = http_response_title();
     title.set_status(http_status(200, "OK"));
     http_headers headers;
     headers.add_header("Content-Type", "text/html");
 
-
     string b = "";
     string line;
-    ifstream myfile("/home/mariashka/work/server/src/messenger/login.html");
-    if (myfile.is_open()) {
-        while (getline(myfile, line))
+    ifstream login("/home/mariashka/work/server/src/messenger/login.html");
+    if (login.is_open()) {
+        while (getline(login, line))
             b = b + line + "\n";
-        myfile.close();
+        login.close();
     }
 
     headers.add_header("Content-Length", to_string(b.size()));
-
     http_body body(b, "text/html");
     return http_response(title, headers, body);
 }
@@ -111,6 +83,40 @@ http_response messenger::get_messenger_page(string name, string lastname) {
     http_headers headers;
     headers.add_header("Content-Type", "text/html");
 
+    string b = begin_messenger(name, lastname);
+    for (int i = 1; i <= messages.size(); ++i) {
+        b += messages[messages.size() - i];
+    }
+    b += end_messenger();
+
+    headers.add_header("Content-Length", to_string(b.size()));
+    http_body body(b, "text/html");
+    return http_response(title, headers, body);
+}
+
+string messenger::wrap_message(string message, string name, string lastname) {
+    stringstream stream(message);
+    string segment;
+    vector<string> list;
+    int f = 0;
+    while (getline(stream, segment, '\n')) {
+        if (f >= 3)
+            list.push_back(segment);
+        f++;
+    }
+    list.pop_back();
+
+    string result = "<h3>" + name + " " + lastname + "</h3><p>\n";
+    for (int i = 0; i < list.size(); ++i) {
+        result += list[i];
+        if (i < list.size() - 1)
+            result += "\n<br>\n";
+    }
+    result += "</p> <hr>\n";
+    return result;
+}
+
+string messenger::begin_messenger(string name, string lastname) {
     string b = "<!DOCTYPE html><html><body>\n";
     b = b + "<h2><u>" + "You are: " + name + " " + lastname + "</u></h2>";
     string line;
@@ -120,42 +126,102 @@ http_response messenger::get_messenger_page(string name, string lastname) {
             b = b + line + "\n";
         myfile.close();
     }
+    return b;
+}
 
-    for (int i = 1; i <= messages.size(); ++i) {
-        b += messages[messages.size() - i];
-    }
+string messenger::end_messenger() {
+    string b = "";
+    string line;
     ifstream myfile2("messenger/messenger_ending.html");
     if (myfile2.is_open()) {
         while (getline(myfile2, line))
             b = b + line + "\n";
         myfile2.close();
     }
+    return b;
+}
 
-    headers.add_header("Content-Length", to_string(b.size()));
+bool messenger::valid_person(string query) {
+    unsigned long idx = query.find('&');
+    return idx != string::npos && idx != 5 && idx != (query.size() - 10);
+}
 
-    http_body body(b, "text/html");
+pair<string, string> messenger::get_denotation(string query) { // parses correctly only correct queries
+    unsigned long idx = query.find('&');
+    string lastname = query.substr(idx + 10, query.size() - idx - 10);
+    string name = query.substr(5, idx - 5);
+    return make_pair(name, lastname);
+}
+
+http::http_response messenger::invalid_person() {
+    http_response_title title;
+    title.set_status(http_status(400, "Bad Request"));
+    http_headers headers;
+    headers.add_header("Content-Length", "15");
+    headers.add_header("Content-Type", "text/plain");
+    http_body body("400 Bad Request");
+
     return http_response(title, headers, body);
 }
 
-string messenger::parse_post(string string1, string name, string lastname) {
-    stringstream stream(string1);
+http::http_response messenger::messenger_response(string query) {
+    if (!valid_person(query))
+        return invalid_person();
+    pair<string, string> d = get_denotation(query);
+    return get_messenger_page(d.first, d.second);
+}
+
+http::http_response messenger::not_found_response() {
+    http_response_title title;
+    title.set_status(http_status(404, "Not Found"));
+    http_headers headers;
+    headers.add_header("Content-Length", "13");
+    headers.add_header("Content-Type", "text/plain");
+    http_body body("404 Not Found");
+    return http_response(title, headers, body);
+}
+
+http_response messenger::internal_error() {
+    http_response_title title;
+    title.set_status(http_status(500, "Internal Server Error"));
+    http_headers headers;
+    headers.add_header("Content-Length", "25");
+    headers.add_header("Content-Type", "text/plain");
+    http_body body("500 Internal Server Error");
+    return http_response(title, headers, body);
+}
+
+http::http_response messenger::post_response(string body, string query) {
+    if (!valid_person(query))
+        return invalid_person();
+    pair<string, string> d = get_denotation(query);
+
+    if (valid_body(body))
+        messages.push_back(wrap_message(body, d.first, d.second));
+    else
+        return invalid_body();
+
+    http_response response = get_messenger_page(d.first, d.second);
+    return response;
+}
+
+bool messenger::valid_body(string message) {
+    stringstream stream(message);
     string segment;
-    vector<string> seglist;
     int f = 0;
     while (getline(stream, segment, '\n')) {
-        if (f >= 3)
-            seglist.push_back(segment);
         f++;
     }
-    seglist.pop_back();
+    return f >= 3;
+}
 
-    string result = "<h3>" + name + " " + lastname + "</h3><p>\n";
-    for (int i = 0; i < seglist.size(); ++i) {
-        result += seglist[i];
-        if (i < seglist.size() - 1)
-            result += "\n<br>\n";
-    }
-    result += "</p> <hr>\n";
-    cerr << result << endl;
-    return result;
+http::http_response messenger::invalid_body() {
+    http_response_title title;
+    title.set_status(http_status(400, "Bad Request"));
+    http_headers headers;
+    headers.add_header("Content-Length", "15");
+    headers.add_header("Content-Type", "text/plain");
+    http_body body("400 Bad Request");
+
+    return http_response(title, headers, body);
 }

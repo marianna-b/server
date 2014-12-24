@@ -17,22 +17,35 @@ struct messenger {
 
 private:
     http::http_response get_messenger_page(std::string, std::string);
-    http::http_response get_login_page();
-    std::string parse_post(std::string, std::string, std::string);
+    std::string wrap_message(std::string, std::string, std::string);
+    std::string begin_messenger(std::string, std::string);
+    std::string end_messenger();
+
+    bool valid_person(std::string);
+    std::pair<std::string, std::string> get_denotation(std::string);
+    http::http_response invalid_person();
+
+    http::http_response login_response();
+    http::http_response messenger_response(std::string);
+    http::http_response not_found_response();
+
+    http::http_response internal_error();
+    http::http_response post_response(std::string, std::string);
+    http::http_response invalid_body();
+    bool valid_body(std::string);
+
+    http::http_request_handler *handler;
+    http::http_server *server;
+
+    std::vector<std::string> messages;
+
+    std::string ip = "127.0.0.1";
+    int port = 33333;
 
     std::function<http::http_response(http::http_request, bool)> get;
     std::function<http::http_response(http::http_request, bool)> head;
     std::function<http::http_response(http::http_request, bool)> post;
-
     std::function<bool(int)> error_handler;
-
-    http::http_request_handler *handler;
-
-    std::vector<std::string> messages;
-
-    http::http_server *server;
-    std::string ip = "127.0.0.1";
-    int port = 33336;
 };
 
 #endif // MESSENGER
