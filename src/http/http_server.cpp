@@ -165,10 +165,15 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
     http_connection* connection = connection_map[s];
     http_request request = http_request(connection->title, connection->headers, connection->body);
     http_response response;
-    if (handler->is_implemented(connection->title.get_method().get_method_name()))
-        response = handler->get(connection->title.get_method().get_method_name())(request, all);
-    else
+    if (handler->is_implemented(connection->title.get_method().get_method_name())) {
+        try {
+            response = handler->get(connection->title.get_method().get_method_name())(request, all);
+        } catch (const std::exception& e) {
+            response = internal_error();
+        }
+    } else {
         response = not_implemented_response();
+    }
     if (response.get().size() == 0) {
         s->read_some(service, MAX_BUFFER_SIZE, on_read_some);
         return;
@@ -215,5 +220,15 @@ http::http_response http_server::not_implemented_response() {
     headers.add_header("Content-Type", "text/plain");
     http_body body("501 Not Implemented");
 
+    return http_response(title, headers, body);
+}
+
+http_response http_server::internal_error() {
+    http_response_title title;
+    title.set_status(http_status(500, "Internal Server Error"));
+    http_headers headers;
+    headers.add_header("Content-Length", "25");
+    headers.add_header("Content-Type", "text/plain");
+    http_body body("500 Internal Server Error");
     return http_response(title, headers, body);
 }

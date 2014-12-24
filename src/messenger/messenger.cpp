@@ -12,39 +12,27 @@ messenger::messenger() {
         return error != 0;
     };
     messenger::get = [&](http_request r, bool) {
-        try {
-            string path = r.get_title().get_url().get_path();
-            string query = r.get_title().get_url().get_query();
+        string path = r.get_title().get_url().get_path();
+        string query = r.get_title().get_url().get_query();
 
-            if (path == "/login.html") {
-                return login_response();
-            } else if (path == "/messenger.html") {
-                return messenger_response(query);
-            } else {
-                return not_found_response();
-            }
-        } catch (exception e) {
-            return internal_error();
+        if (path == "/login.html") {
+            return login_response();
+        } else if (path == "/messenger.html") {
+            return messenger_response(query);
+        } else {
+            return not_found_response();
         }
     };
     messenger::head = [&](http_request r, bool) {
-        try {
-            http_response response = get(r, true);
-            response.set_body(http_body());
-            return response;
-        } catch (exception e) {
-            return internal_error();
-        }
+        http_response response = get(r, true);
+        response.set_body(http_body());
+        return response;
     };
     messenger::post = [&](http_request r, bool) {
-        try {
-            string body = r.get_body().get();
-            string query = r.get_title().get_url().get_query();
+        string body = r.get_body().get();
+        string query = r.get_title().get_url().get_query();
 
-            return post_response(body, query);
-        } catch (exception e) {
-            return internal_error();
-        }
+        return post_response(body, query);
     };
     tcp::signal_handler::set();
     handler = new http_request_handler();
@@ -189,16 +177,6 @@ http::http_response messenger::not_found_response() {
     headers.add_header("Content-Length", "13");
     headers.add_header("Content-Type", "text/plain");
     http_body body("404 Not Found");
-    return http_response(title, headers, body);
-}
-
-http_response messenger::internal_error() {
-    http_response_title title;
-    title.set_status(http_status(500, "Internal Server Error"));
-    http_headers headers;
-    headers.add_header("Content-Length", "25");
-    headers.add_header("Content-Type", "text/plain");
-    http_body body("500 Internal Server Error");
     return http_response(title, headers, body);
 }
 

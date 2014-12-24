@@ -29,7 +29,6 @@ private:
     http::http_response messenger_response(std::string);
     http::http_response not_found_response();
 
-    http::http_response internal_error();
     http::http_response post_response(std::string, std::string);
     http::http_response invalid_body();
     bool valid_body(std::string);
