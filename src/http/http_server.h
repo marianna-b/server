@@ -26,6 +26,7 @@ namespace http {
         tcp::async_server* server;
         http_request_handler* handler;
 
+        http::http_response not_implemented_response();
         void on_no_body_data(tcp::async_socket*);
         bool on_body_data(tcp::async_socket*, size_t);
         bool handle_error(int);

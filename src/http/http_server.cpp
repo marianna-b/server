@@ -164,14 +164,17 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
 
     http_connection* connection = connection_map[s];
     http_request request = http_request(connection->title, connection->headers, connection->body);
-    http_response response = handler->get(connection->title.get_method().get_method_name())(request, all);
+    http_response response;
+    if (handler->is_implemented(connection->title.get_method().get_method_name()))
+        response = handler->get(connection->title.get_method().get_method_name())(request, all);
+    else
+        response = not_implemented_response();
     if (response.get().size() == 0) {
         s->read_some(service, MAX_BUFFER_SIZE, on_read_some);
         return;
     }
     connection ->sent = 0;
     connection->to_string(response);
-    // TODO if method not implemented
     if (connection->response.size() <= MAX_BUFFER_SIZE) {
         char c[MAX_BUFFER_SIZE];
         ::memset(c, 0, MAX_BUFFER_SIZE);
@@ -204,3 +207,13 @@ http_server::~http_server() {
 }
 
 
+http::http_response http_server::not_implemented_response() {
+    http_response_title title;
+    title.set_status(http_status(501, "Not Implemented"));
+    http_headers headers;
+    headers.add_header("Content-Length", "19");
+    headers.add_header("Content-Type", "text/plain");
+    http_body body("501 Not Implemented");
+
+    return http_response(title, headers, body);
+}
