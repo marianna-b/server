@@ -14,11 +14,14 @@ void writer_del_epoll(epoll*, int, io_events*);
 tcp::io_service::io_service() {
     efd = new epoll();
     clean = false;
+
     stopper = ::eventfd(0, 0);
     efd->add(stopper, EPOLL_EVENTFD);
     signal_handler::add(stopper);
+
     pause_fd = ::eventfd(0, 0);
     efd->add(pause_fd, EPOLL_EVENTFD);
+
     if (stopper < 0)
         throw runtime_error(strerror(errno));
 }
@@ -100,7 +103,7 @@ void tcp::io_service::stop() {
 }
 
 void io_service::pause() {
-    cerr << "SERVICE STOP&CLEAN REQUEST SENT!\n";
+    cerr << "SERVICE PAUSE REQUEST SENT!\n";
     if (eventfd_write(pause_fd, 1) < 0)
         throw runtime_error(strerror(errno));
 }
@@ -109,8 +112,10 @@ tcp::io_service::~io_service() {
     delete efd;
     if(::close(stopper) < 0)
         throw runtime_error(strerror(errno));
+
     if(::close(pause_fd) < 0)
         throw runtime_error(strerror(errno));
+
 }
 
 void reader_del_epoll(epoll* efd, int fd, io_events* ev) {
@@ -217,4 +222,9 @@ void io_service::connect_waiter(async_socket* s, const char* ip, int port, funct
 
 bool io_service::operator<(io_service const &aConst) const {
     return stopper < aConst.stopper;
+}
+
+void io_service::del_client(async_server *server, async_socket* sock) {
+    io_events& events = data[server->get_fd()];
+    events.remove_client(sock);
 }

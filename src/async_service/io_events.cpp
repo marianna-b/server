@@ -72,7 +72,7 @@ bool io_events::want_write() {
 
 bool io_events::run_accept() {
     cerr << "Trying to accept! " << fd <<"\n";
-    accept_buffer now = acceptors.front();
+    accept_buffer& now = acceptors.front();
     sockaddr_in addr;
     socklen_t addr_size;
     int flag = ::accept4(fd, (sockaddr *) &addr, &addr_size, SOCK_NONBLOCK);
@@ -85,8 +85,7 @@ bool io_events::run_accept() {
         cerr << "We need some time!\n";
     } else {
         now.client = new async_socket(flag);
-        acceptors.pop_front();
-        acceptors.push_front(now);
+        clients.push_back(now.client);
         cerr << "Success! Client " << flag << "\n";
         return true;
     }
@@ -95,7 +94,7 @@ bool io_events::run_accept() {
 
 bool io_events::run_connect() {
     cerr << "Trying to connect! " << fd << "\n";
-    connect_buffer now = connectors.front();
+    connect_buffer& now = connectors.front();
     sockaddr_in addr;
     const char *ip = now.ip;
     int port = now.port;
@@ -147,7 +146,7 @@ bool io_events::run_read() {
 
 bool io_events::run_write() {
     cerr << "Trying to write! " << fd <<"\n";
-    write_buffer now = writers.front();
+    write_buffer& now = writers.front();
 
     const char *buffer = now.buf;
     size_t idx = now.done;
@@ -164,8 +163,6 @@ bool io_events::run_write() {
         cerr << "Success!\n";
         cerr << "We've written " << w << "!\n";
         now.done += w;
-        writers.pop_front();
-        writers.push_front(now);
 
         if (now.done == now.needed)
             return true;
@@ -215,4 +212,22 @@ size_t io_events::get_readers() {
 
 io_events::io_events(int i) {
     fd = i;
+}
+
+io_events::~io_events() {
+    for (int i = 0; i < clients.size(); ++i) {
+        delete clients[i];
+    }
+}
+
+void io_events::remove_client(async_socket *asyncSocket) {
+    std::vector<async_socket*>::iterator  it;
+    it = clients.begin();
+    for (; it != clients.end(); ++it) {
+        if ((*it) == asyncSocket) {
+            clients.erase(it);
+            delete asyncSocket;
+            return;
+        }
+    }
 }

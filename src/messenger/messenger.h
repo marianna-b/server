@@ -39,7 +39,7 @@ private:
     std::vector<std::string> messages;
 
     const std::string ip = "127.0.0.1";
-    const int port = 33333;
+    const int port = 33334;
 
     const std::string messenger1 = "/home/mariashka/work/server/src/messenger/messenger.html";
     const std::string messenger2 = "/home/mariashka/work/server/src/messenger/messenger_ending.html";

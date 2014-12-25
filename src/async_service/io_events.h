@@ -4,11 +4,11 @@
 
 #include <sys/types.h>
 #include <deque>
+#include <vector>
 #include <functional>
 #include <tcp/async_socket.h>
 
 const size_t MAX_BUFFER_SIZE = 10000;
-
 namespace tcp {
     struct read_buffer {
         char buf[MAX_BUFFER_SIZE];
@@ -53,6 +53,7 @@ namespace tcp {
         io_events();
         io_events(async_socket*);
         io_events(int);
+        ~io_events();
 
         size_t get_writers();
         size_t get_readers();
@@ -77,7 +78,10 @@ namespace tcp {
         void read_call_back();
         void write_call_back();
 
+        void remove_client(async_socket*);
+
     private:
+
         int fd;
         async_socket* sock;
         int error = 0;
@@ -85,6 +89,8 @@ namespace tcp {
         std::deque <write_buffer> writers;
         std::deque <connect_buffer> connectors;
         std::deque <accept_buffer> acceptors;
+
+        std::vector <async_socket*> clients;
     };
 
 }

@@ -30,8 +30,10 @@ http::http_server::http_server(char const *ip, int port, http::http_request_hand
     http_server::on_send = [&](int error, async_socket *asyncSocket) {
         if (handle_error(error)) return;
         if (connection_map[asyncSocket]->condition == OUT) {
-            delete asyncSocket;
+            service->del_client(server, asyncSocket);
+            http_connection* connection = connection_map[asyncSocket];
             connection_map.erase(asyncSocket);
+            delete connection;
         } else {
             asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
         }
@@ -174,7 +176,7 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
     if (handler->is_implemented(connection->title.get_method().get_method_name())) {
         try {
             response = handler->get(connection->title.get_method().get_method_name())(request, all);
-        } catch (const std::exception& e) {
+        } catch (std::exception e) {
             response = internal_error();
         }
     } else {
@@ -207,14 +209,14 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
 }
 
 http_server::~http_server() {
-    delete server;
-    delete service;
-
     std::map<async_socket*, http_connection*>::iterator it = connection_map.begin();
     for (; it != connection_map.end(); ++it) {
         http_connection* connection = (*it).second;
         delete connection;
     }
+
+    delete server;
+    delete service;
 }
 
 
@@ -240,6 +242,8 @@ http_response http_server::internal_error() {
 }
 
 void http_server::connection_failed(async_socket *asyncSocket) {
-    delete asyncSocket;
+    service->del_client(server, asyncSocket);
+    http_connection* connection = connection_map[asyncSocket];
     connection_map.erase(asyncSocket);
+    delete connection;
 }

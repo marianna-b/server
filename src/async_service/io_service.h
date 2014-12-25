@@ -21,7 +21,7 @@ namespace tcp {
         void run();
         void stop();
         void pause();
-
+        void del_client(struct async_server*, async_socket*);
 
         ~io_service();
 
