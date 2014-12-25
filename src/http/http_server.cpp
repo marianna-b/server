@@ -40,6 +40,10 @@ http::http_server::http_server(char const *ip, int port, http::http_request_hand
     http_server::on_read_some = [&](int error, async_socket *asyncSocket, size_t size, void const *buf) {
         if (handle_error(error)) return;
         bool flag = false;
+        if (size == 0) {
+            connection_failed(asyncSocket);
+            return;
+        }
 
         connection_map[asyncSocket]->request += std::string((char const *) buf, (char const *) buf + size);
 
@@ -97,6 +101,7 @@ bool http_server::on_body_data(async_socket* asyncSocket, size_t) {
         if (curr->headers.is_there("Content-Length")) {
             int i = std::stoi(curr->headers.get_value("Content-Length"), 0, 10);
             if (i == curr->body.size()) {
+                curr->condition = OUT;
                 on_request(asyncSocket, true);
                 return true;
             }
@@ -104,6 +109,7 @@ bool http_server::on_body_data(async_socket* asyncSocket, size_t) {
     } else {
         curr->body.add(curr->request);
         curr->request = "";
+        curr->condition = OUT;
         on_request(asyncSocket, true);
         return true;
     }
@@ -231,4 +237,9 @@ http_response http_server::internal_error() {
     headers.add_header("Content-Type", "text/plain");
     http_body body("500 Internal Server Error");
     return http_response(title, headers, body);
+}
+
+void http_server::connection_failed(async_socket *asyncSocket) {
+    delete asyncSocket;
+    connection_map.erase(asyncSocket);
 }

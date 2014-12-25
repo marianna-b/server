@@ -28,6 +28,7 @@ namespace http {
 
         http::http_response not_implemented_response();
         http::http_response internal_error();
+        void connection_failed(tcp::async_socket*);
         void on_no_body_data(tcp::async_socket*);
         bool on_body_data(tcp::async_socket*, size_t);
         bool handle_error(int);
