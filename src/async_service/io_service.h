@@ -20,7 +20,6 @@ namespace tcp {
 
         void run();
         void stop();
-        void pause();
         void del_client(struct async_server*, async_socket*);
 
         ~io_service();
@@ -37,10 +36,8 @@ namespace tcp {
         void accept_waiter(struct async_server*, std::function <void(int, async_socket*)>);
         void connect_waiter(async_socket*, const char*, int, std::function <void(int, async_socket*)>);
 
-        bool clean;
-        epoll* efd;
+        std::unique_ptr<epoll> efd;
         int stopper;
-        int pause_fd;
 
         std::map <int, io_events> data;
     };

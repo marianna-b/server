@@ -19,9 +19,8 @@ void async_server::bind(char const *ip, int port) {
 
     int flag = ::bind(fd, (struct sockaddr *) &addr, sizeof(struct sockaddr_in));
 
-    if (flag == -1) {
-        throw std::runtime_error(strerror(errno));
-    }
+    if (flag == -1)
+        throw std::logic_error(strerror(errno));
 }
 
 void async_server::listen() {

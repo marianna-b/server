@@ -16,6 +16,7 @@ epoll::epoll() {
 
 void epoll::add(int f, epoll_type type) {
     epoll_event ev;
+    ev.data.ptr = nullptr;
     ev.data.fd = f;
     ev.events = type;
     if (::epoll_ctl(fd, EPOLL_CTL_ADD, f, &ev) < 0)

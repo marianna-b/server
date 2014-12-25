@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <tcp/async_server.h>
+#include <memory>
 #include "http_request_handler.h"
 #include "http_connection.h"
 
@@ -20,10 +21,10 @@ namespace http {
         ~http_server();
 
     private:
-        std::map<tcp::async_socket*, http_connection*> connection_map;
+        std::map<tcp::async_socket*, std::unique_ptr<http_connection> > connection_map;
 
-        tcp::io_service* service;
-        tcp::async_server* server;
+        std::unique_ptr<tcp::io_service> service;
+        std::unique_ptr<tcp::async_server> server;
         http_request_handler* handler;
 
         http::http_response not_implemented_response();

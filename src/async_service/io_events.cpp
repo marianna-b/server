@@ -70,6 +70,15 @@ bool io_events::want_write() {
     return !writers.empty();
 }
 
+async_socket* io_events::get(int fd) {
+   auto it = clients.begin();
+    for (; it != clients.end() ; ++it) {
+        if ((*it)->get_fd() == fd)
+            return (*it).get();
+    }
+    return nullptr;
+}
+
 bool io_events::run_accept() {
     cerr << "Trying to accept! " << fd <<"\n";
     accept_buffer& now = acceptors.front();
@@ -84,8 +93,8 @@ bool io_events::run_accept() {
         }
         cerr << "We need some time!\n";
     } else {
-        now.client = new async_socket(flag);
-        clients.push_back(now.client);
+        clients.emplace(new async_socket(flag));
+        now.client = get(flag);
         cerr << "Success! Client " << flag << "\n";
         return true;
     }
@@ -215,19 +224,15 @@ io_events::io_events(int i) {
 }
 
 io_events::~io_events() {
-    for (int i = 0; i < clients.size(); ++i) {
-        delete clients[i];
-    }
 }
 
 void io_events::remove_client(async_socket *asyncSocket) {
-    std::vector<async_socket*>::iterator  it;
-    it = clients.begin();
+    auto it = clients.begin();
     for (; it != clients.end(); ++it) {
-        if ((*it) == asyncSocket) {
+        if ((*it).get() == asyncSocket) {
             clients.erase(it);
-            delete asyncSocket;
             return;
         }
     }
 }
+

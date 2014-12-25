@@ -4,8 +4,9 @@
 
 #include <sys/types.h>
 #include <deque>
-#include <vector>
+#include <set>
 #include <functional>
+#include <memory>
 #include <tcp/async_socket.h>
 
 const size_t MAX_BUFFER_SIZE = 10000;
@@ -52,6 +53,10 @@ namespace tcp {
     struct io_events {
         io_events();
         io_events(async_socket*);
+        io_events(const io_events&) = delete;
+        io_events& operator = (const io_events&) = delete;
+
+
         io_events(int);
         ~io_events();
 
@@ -82,6 +87,8 @@ namespace tcp {
 
     private:
 
+        std::set <std::unique_ptr<async_socket> > clients;
+        tcp::async_socket* get(int);
         int fd;
         async_socket* sock;
         int error = 0;
@@ -90,7 +97,6 @@ namespace tcp {
         std::deque <connect_buffer> connectors;
         std::deque <accept_buffer> acceptors;
 
-        std::vector <async_socket*> clients;
     };
 
 }

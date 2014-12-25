@@ -11,31 +11,29 @@ http::http_server::http_server(char const *ip, int port, http::http_request_hand
     if (!h->is_implemented(GET) || !h->is_implemented(HEAD))
         throw std::logic_error("HEAD or GET not implemented");
 
-    service = new io_service;
-    server = new async_server;
+    service.reset(new io_service);
+    server.reset(new async_server);
     server->bind(ip, port);
     server->listen();
 
     http_server::on_connect = [&](int error, async_socket *asyncSocket) {
         if (handle_error(error)) return;
 
-        connection_map[asyncSocket] = new http_connection(asyncSocket);
-        asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
-        server->get_connection(service, on_connect);
+        connection_map[asyncSocket].reset(new http_connection(asyncSocket));
+        asyncSocket->read_some(service.get(), MAX_BUFFER_SIZE, on_read_some);
+        server->get_connection(service.get(), on_connect);
     };
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i)
-        server->get_connection(service, on_connect);
+        server->get_connection(service.get(), on_connect);
 
     http_server::on_send = [&](int error, async_socket *asyncSocket) {
         if (handle_error(error)) return;
         if (connection_map[asyncSocket]->condition == OUT) {
-            service->del_client(server, asyncSocket);
-            http_connection* connection = connection_map[asyncSocket];
+            service->del_client(server.get(), asyncSocket);
             connection_map.erase(asyncSocket);
-            delete connection;
         } else {
-            asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
+            asyncSocket->read_some(service.get(), MAX_BUFFER_SIZE, on_read_some);
         }
     };
 
@@ -64,12 +62,12 @@ http::http_server::http_server(char const *ip, int port, http::http_request_hand
                 && handler->is_on_some(connection_map[asyncSocket]->title.get_method().get_method_name()))
             on_request(asyncSocket, false);
         else
-            asyncSocket->read_some(service, MAX_BUFFER_SIZE, on_read_some);
+            asyncSocket->read_some(service.get(), MAX_BUFFER_SIZE, on_read_some);
     };
 
     http_server::on_write_some = [&](int error, async_socket *s) {
         std::cerr << connection_map.count(s) << std::endl;
-        http_connection* connection1 = connection_map[s];
+        auto connection1 = connection_map[s].get();
         char c1[MAX_BUFFER_SIZE];
         ::memset(c1, 0, MAX_BUFFER_SIZE);
 
@@ -82,16 +80,16 @@ http::http_server::http_server(char const *ip, int port, http::http_request_hand
         connection1->sent += idx2 - idx1;
 
         if (connection1->response.size() <= connection1->sent) {
-            connection1->client->write(service, c1, idx2 - idx1, on_send);
+            connection1->client->write(service.get(), c1, idx2 - idx1, on_send);
         } else {
-            connection1->client->write(service, c1, MAX_BUFFER_SIZE, on_write_some);
+            connection1->client->write(service.get(), c1, MAX_BUFFER_SIZE, on_write_some);
         }
     };
 }
 
 bool http_server::on_body_data(async_socket* asyncSocket, size_t) {
 
-    http_connection* curr = connection_map[asyncSocket];
+    auto curr = connection_map[asyncSocket].get();
     std::string cr_lf_server = "\r\n";
 
     char *cr_lf_p = (char *) cr_lf_server.c_str();
@@ -120,7 +118,7 @@ bool http_server::on_body_data(async_socket* asyncSocket, size_t) {
 
 void http_server::on_no_body_data(async_socket* asyncSocket) {
     char const *cr_lf_p = "\r\n";
-    http_connection* curr = connection_map[asyncSocket];
+    auto curr = connection_map[asyncSocket].get();
     unsigned long idx = curr->request.find(cr_lf_p);
 
     while (idx != std::string::npos) {
@@ -170,7 +168,7 @@ bool http_server::handle_error(int error) {
 
 void http_server::on_request(tcp::async_socket* s, bool all) {
 
-    http_connection* connection = connection_map[s];
+    http_connection* connection = connection_map[s].get();
     http_request request = http_request(connection->title, connection->headers, connection->body);
     http_response response;
     if (handler->is_implemented(connection->title.get_method().get_method_name())) {
@@ -183,7 +181,7 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
         response = not_implemented_response();
     }
     if (response.get().size() == 0) {
-        s->read_some(service, MAX_BUFFER_SIZE, on_read_some);
+        s->read_some(service.get(), MAX_BUFFER_SIZE, on_read_some);
         return;
     }
     connection ->sent = 0;
@@ -194,7 +192,7 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
         for (int i = 0; i < connection->response.size(); ++i) {
             c[i] = connection->response[i];
         }
-        connection->client->write(service, c, connection->response.size(), on_send);
+        connection->client->write(service.get(), c, connection->response.size(), on_send);
     } else {
         char c[MAX_BUFFER_SIZE];
         ::memset(c, 0, MAX_BUFFER_SIZE);
@@ -202,21 +200,13 @@ void http_server::on_request(tcp::async_socket* s, bool all) {
             c[i] = connection->response[i];
         }
         connection->sent += MAX_BUFFER_SIZE;
-        connection->client->write(service, c, MAX_BUFFER_SIZE, on_write_some);
+        connection->client->write(service.get(), c, MAX_BUFFER_SIZE, on_write_some);
     }
     if (all)
         connection->condition = OUT;
 }
 
 http_server::~http_server() {
-    std::map<async_socket*, http_connection*>::iterator it = connection_map.begin();
-    for (; it != connection_map.end(); ++it) {
-        http_connection* connection = (*it).second;
-        delete connection;
-    }
-
-    delete server;
-    delete service;
 }
 
 
@@ -242,8 +232,6 @@ http_response http_server::internal_error() {
 }
 
 void http_server::connection_failed(async_socket *asyncSocket) {
-    service->del_client(server, asyncSocket);
-    http_connection* connection = connection_map[asyncSocket];
+    service->del_client(server.get(), asyncSocket);
     connection_map.erase(asyncSocket);
-    delete connection;
 }

@@ -5,7 +5,7 @@
 #include <http/http_response.h>
 #include <functional>
 #include <http/http_server.h>
-
+#include <memory>
 struct messenger {
     messenger();
 
@@ -33,8 +33,8 @@ private:
     http::http_response invalid_body();
     bool valid_body(std::string);
 
-    http::http_request_handler *handler;
-    http::http_server *server;
+    std::unique_ptr<http::http_request_handler> handler;
+    std::unique_ptr<http::http_server> server;
 
     std::vector<std::string> messages;
 

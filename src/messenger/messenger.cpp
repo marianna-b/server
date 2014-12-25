@@ -35,18 +35,15 @@ messenger::messenger() {
         return post_response(body, query);
     };
     tcp::signal_handler::set();
-    handler = new http_request_handler();
+    handler.reset(new http_request_handler());
     handler->set(GET, get, false);
     handler->set(HEAD, head, false);
     handler->set(POST, post, false);
     handler->set_error_handler(error_handler);
-    server = new http_server(ip.c_str(), port, handler);
+    server.reset(new http_server(ip.c_str(), port, handler.get()));
 };
 
-messenger::~messenger() {
-    delete server;
-    delete handler;
-}
+messenger::~messenger() {}
 
 void messenger::start() {
     server->start();

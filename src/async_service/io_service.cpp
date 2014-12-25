@@ -12,15 +12,11 @@ void reader_del_epoll(epoll*, int, io_events*);
 void writer_del_epoll(epoll*, int, io_events*);
 
 tcp::io_service::io_service() {
-    efd = new epoll();
-    clean = false;
+    efd.reset(new epoll());
 
     stopper = ::eventfd(0, 0);
     efd->add(stopper, EPOLL_EVENTFD);
     signal_handler::add(stopper);
-
-    pause_fd = ::eventfd(0, 0);
-    efd->add(pause_fd, EPOLL_EVENTFD);
 
     if (stopper < 0)
         throw runtime_error(strerror(errno));
@@ -49,26 +45,18 @@ void tcp::io_service::run() {
                 break;
             }
 
-            if (curr == pause_fd) {
-                cerr << "Trying to stop service clean!\n";
-                cerr << "Success!\n";
-                clean = true;
-                running = false;
-                break;
-            }
-
             io_events *ev = &data[curr];
 
             if (efd->events[i].events & EPOLL_WRITE) {
                 if (ev->want_connect() && ev->run_connect()) {
                     cerr << "Call of callback!\n";
-                    writer_del_epoll(efd, curr, ev);
+                    writer_del_epoll(efd.get(), curr, ev);
                     ev->connect_call_back();
                 }
 
                 if (ev->want_write() && ev->run_write()) {
                     cerr << "Call of callback!\n";
-                    writer_del_epoll(efd, curr, ev);
+                    writer_del_epoll(efd.get(), curr, ev);
                     ev->write_call_back();
                 }
             }
@@ -76,23 +64,17 @@ void tcp::io_service::run() {
             if (efd->events[i].events & EPOLL_READ) {
                 if (ev->want_accept() && ev->run_accept()) {
                     cerr << "Call of callback!\n";
-                    reader_del_epoll(efd, curr, ev);
+                    reader_del_epoll(efd.get(), curr, ev);
                     ev->accept_call_back();
                 }
 
                 if (ev->want_read() && ev->run_read()) {
                     cerr << "Call of callback!\n";
-                    reader_del_epoll(efd, curr, ev);
+                    reader_del_epoll(efd.get(), curr, ev);
                     ev->read_call_back();
                 }
             }
         }
-    }
-    if (clean) {
-        delete efd;
-        efd = new epoll();
-        clean = false;
-        data.clear();
     }
 }
 
@@ -102,20 +84,9 @@ void tcp::io_service::stop() {
         throw runtime_error(strerror(errno));
 }
 
-void io_service::pause() {
-    cerr << "SERVICE PAUSE REQUEST SENT!\n";
-    if (eventfd_write(pause_fd, 1) < 0)
-        throw runtime_error(strerror(errno));
-}
-
 tcp::io_service::~io_service() {
-    delete efd;
     if(::close(stopper) < 0)
         throw runtime_error(strerror(errno));
-
-    if(::close(pause_fd) < 0)
-        throw runtime_error(strerror(errno));
-
 }
 
 void reader_del_epoll(epoll* efd, int fd, io_events* ev) {
@@ -174,9 +145,9 @@ void io_service::read_waiter(async_socket* s, size_t size, function<void(int, as
     int fd = s->get_fd();
 
     if (data.count(fd) == 0)
-        data[fd] = io_events(s);
+        data.emplace(std::piecewise_construct, std::make_tuple(fd), make_tuple(s));
 
-    reader_add_epoll(efd, fd, &data[fd]);
+    reader_add_epoll(efd.get(), fd, &data[fd]);
     data[fd].add_read(read_buffer(true, size, f));
 }
 
@@ -184,9 +155,9 @@ void io_service::read_some_waiter(async_socket* s, size_t size, function<void(in
     int fd = s->get_fd();
 
     if (data.count(fd) == 0)
-        data[fd] = io_events(s);
+        data.emplace(std::piecewise_construct, std::make_tuple(fd), make_tuple(s));
 
-    reader_add_epoll(efd, fd, &data[fd]);
+    reader_add_epoll(efd.get(), fd, &data[fd]);
     data[fd].add_read(read_buffer(false, size, f));
 }
 
@@ -194,9 +165,9 @@ void io_service::write_waiter(async_socket* s, void * mesg, size_t size, functio
     int fd = s->get_fd();
 
     if (data.count(fd) == 0)
-        data[fd] = io_events(s);
+        data.emplace(std::piecewise_construct, std::make_tuple(fd), make_tuple(s));
 
-    writer_add_epoll(efd, fd, &data[fd]);
+    writer_add_epoll(efd.get(), fd, &data[fd]);
     data[fd].add_write(write_buffer(mesg, size, f));
 }
 
@@ -204,9 +175,9 @@ void io_service::accept_waiter(async_server* s, function<void(int, async_socket*
     int fd = s ->get_fd();
 
     if (data.count(fd) == 0)
-        data[fd] = io_events(fd);
+        data.emplace(std::piecewise_construct, std::make_tuple(fd), make_tuple(fd));
 
-    reader_add_epoll(efd, fd, &data[fd]);
+    reader_add_epoll(efd.get(), fd, &data[fd]);
     data[fd].add_accept(accept_buffer(f));
 }
 
@@ -214,9 +185,9 @@ void io_service::connect_waiter(async_socket* s, const char* ip, int port, funct
     int fd = s->get_fd();
 
     if (data.count(fd) == 0)
-        data[fd] = io_events(s);
+        data.emplace(std::piecewise_construct, std::make_tuple(fd), make_tuple(s));
 
-    writer_add_epoll(efd, fd, &data[fd]);
+    writer_add_epoll(efd.get(), fd, &data[fd]);
     data[fd].add_connect(connect_buffer(ip, port, f));
 }
 
