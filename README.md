@@ -1,3 +1,3 @@
 server
 ======
-Course work for C++
+Course work for C++ course
